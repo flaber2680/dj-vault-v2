@@ -154,10 +154,6 @@ async function getMergedCollections() {
   const storedCollections = await readStoredCollections();
   const byNumber = new Map<string, CollectionItem>();
 
-  for (const collection of collections) {
-    byNumber.set(collection.number, collection);
-  }
-
   for (const collection of storedCollections) {
     byNumber.set(collection.number, collection);
   }
