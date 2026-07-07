@@ -1,0 +1,226 @@
+import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "crypto";
+import { mkdir, readFile, writeFile } from "fs/promises";
+import path from "path";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+const dataDirectory = path.join(process.cwd(), ".data");
+const usersFile = path.join(dataDirectory, "users.json");
+
+export type AuthProvider = "email" | "google";
+export type TariffPlan = "free" | "start" | "pro" | "premium";
+
+export type StoredUser = {
+  id: string;
+  email: string;
+  name: string;
+  plan?: TariffPlan;
+  planExpiresAt?: string;
+  providers: AuthProvider[];
+  passwordHash?: string;
+  googleId?: string;
+  avatarUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicUser = {
+  id: string;
+  email: string;
+  name: string;
+  plan: TariffPlan;
+  planExpiresAt?: string;
+  providers: AuthProvider[];
+  avatarUrl?: string;
+  createdAt: string;
+};
+
+type GoogleProfile = {
+  googleId: string;
+  email: string;
+  name?: string;
+  avatarUrl?: string;
+};
+
+export function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+export function getPublicUser(user: StoredUser): PublicUser {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    plan: user.plan ?? "free",
+    planExpiresAt: user.planExpiresAt,
+    providers: user.providers,
+    avatarUrl: user.avatarUrl,
+    createdAt: user.createdAt,
+  };
+}
+
+async function readUsers(): Promise<StoredUser[]> {
+  try {
+    const raw = await readFile(usersFile, "utf8");
+    return JSON.parse(raw) as StoredUser[];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return [];
+    }
+
+    throw error;
+  }
+}
+
+async function writeUsers(users: StoredUser[]) {
+  await mkdir(dataDirectory, { recursive: true });
+  await writeFile(usersFile, JSON.stringify(users, null, 2), "utf8");
+}
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
+
+  return `${salt}:${derivedKey.toString("hex")}`;
+}
+
+export async function verifyPassword(password: string, storedHash?: string) {
+  if (!storedHash) {
+    return false;
+  }
+
+  const [salt, hash] = storedHash.split(":");
+
+  if (!salt || !hash) {
+    return false;
+  }
+
+  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
+  const storedBuffer = Buffer.from(hash, "hex");
+
+  if (storedBuffer.length !== derivedKey.length) {
+    return false;
+  }
+
+  return timingSafeEqual(storedBuffer, derivedKey);
+}
+
+export async function findUserById(id: string) {
+  const users = await readUsers();
+  const user = users.find((item) => item.id === id);
+
+  return user ? getPublicUser(user) : null;
+}
+
+export async function findUserByEmail(email: string) {
+  const users = await readUsers();
+  const normalizedEmail = normalizeEmail(email);
+
+  return users.find((user) => user.email === normalizedEmail) ?? null;
+}
+
+export async function updateUserPlan(
+  id: string,
+  plan: TariffPlan,
+  planExpiresAt?: string,
+) {
+  const users = await readUsers();
+  const user = users.find((item) => item.id === id);
+
+  if (!user) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  user.plan = plan;
+  user.planExpiresAt = plan === "free" ? undefined : planExpiresAt;
+  user.updatedAt = new Date().toISOString();
+
+  await writeUsers(users);
+
+  return getPublicUser(user);
+}
+
+export async function createUserWithEmail({
+  email,
+  password,
+  name,
+}: {
+  email: string;
+  password: string;
+  name?: string;
+}) {
+  const users = await readUsers();
+  const normalizedEmail = normalizeEmail(email);
+  const existingUser = users.find((user) => user.email === normalizedEmail);
+
+  if (existingUser) {
+    throw new Error("USER_EXISTS");
+  }
+
+  const now = new Date().toISOString();
+  const user: StoredUser = {
+    id: randomUUID(),
+    email: normalizedEmail,
+    name: name?.trim() || normalizedEmail.split("@")[0],
+    plan: "free",
+    providers: ["email"],
+    passwordHash: await hashPassword(password),
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  users.push(user);
+  await writeUsers(users);
+
+  return getPublicUser(user);
+}
+
+export async function findOrCreateGoogleUser(profile: GoogleProfile) {
+  const users = await readUsers();
+  const normalizedEmail = normalizeEmail(profile.email);
+  const now = new Date().toISOString();
+  const existingGoogleUser = users.find(
+    (user) => user.googleId === profile.googleId,
+  );
+
+  if (existingGoogleUser) {
+    existingGoogleUser.name = profile.name || existingGoogleUser.name;
+    existingGoogleUser.avatarUrl = profile.avatarUrl;
+    existingGoogleUser.updatedAt = now;
+    await writeUsers(users);
+
+    return getPublicUser(existingGoogleUser);
+  }
+
+  const existingEmailUser = users.find((user) => user.email === normalizedEmail);
+
+  if (existingEmailUser) {
+    existingEmailUser.googleId = profile.googleId;
+    existingEmailUser.name = profile.name || existingEmailUser.name;
+    existingEmailUser.avatarUrl = profile.avatarUrl;
+    existingEmailUser.providers = Array.from(
+      new Set([...existingEmailUser.providers, "google"]),
+    );
+    existingEmailUser.updatedAt = now;
+    await writeUsers(users);
+
+    return getPublicUser(existingEmailUser);
+  }
+
+  const user: StoredUser = {
+    id: randomUUID(),
+    email: normalizedEmail,
+    name: profile.name || normalizedEmail.split("@")[0],
+    plan: "free",
+    providers: ["google"],
+    googleId: profile.googleId,
+    avatarUrl: profile.avatarUrl,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  users.push(user);
+  await writeUsers(users);
+
+  return getPublicUser(user);
+}
