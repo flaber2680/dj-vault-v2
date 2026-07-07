@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { loginWithEmail } from "@/app/auth/actions";
+import { loginWithEmail, signInWithGoogle } from "@/app/auth/actions";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -16,6 +16,10 @@ const errorMessages: Record<string, string> = {
     "Google-вход пока не настроен. Добавьте ключи Google OAuth в переменные окружения.",
   google_failed:
     "Google не вернул доступ. Попробуйте еще раз или войдите по почте.",
+  Configuration:
+    "Google-вход пока не настроен. Проверьте Google Client ID, Secret и AUTH_SECRET.",
+  AccessDenied:
+    "Google не подтвердил доступ. Попробуйте еще раз или войдите по почте.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
@@ -34,6 +38,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       title="Войти в DJ Vault"
       description="Откройте закрытую библиотеку, свежие подборки и быстрый доступ к архиву."
       action={loginWithEmail}
+      googleAction={signInWithGoogle}
       error={error}
     />
   );

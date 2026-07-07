@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { findUserById } from "@/lib/auth/store";
 
 export const SESSION_COOKIE = "djv_session";
@@ -97,5 +98,12 @@ export async function getCurrentUser() {
   const cookieStore = await cookies();
   const userId = verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
 
-  return userId ? findUserById(userId) : null;
+  if (userId) {
+    return findUserById(userId);
+  }
+
+  const session = await auth();
+  const nextAuthUserId = session?.user?.id;
+
+  return nextAuthUserId ? findUserById(nextAuthUserId) : null;
 }

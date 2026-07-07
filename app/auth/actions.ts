@@ -1,5 +1,6 @@
 "use server";
 
+import { signIn, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import {
   createUserWithEmail,
@@ -56,7 +57,11 @@ export async function loginWithEmail(formData: FormData) {
   redirect(user.plan && user.plan !== "free" ? "/collections" : "/account");
 }
 
+export async function signInWithGoogle() {
+  await signIn("google", { redirectTo: "/account" });
+}
+
 export async function logout() {
   await clearSessionCookie();
-  redirect("/");
+  await signOut({ redirectTo: "/" });
 }

@@ -1342,6 +1342,9 @@ body.is-scrolled .header {
 }
 
 .auth-google {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
   height: 46px;
   width: 100%;
   display: inline-flex;
@@ -1363,6 +1366,10 @@ body.is-scrolled .header {
   background: #fff;
   color: #000;
   border-color: #fff;
+}
+
+.auth-provider-form {
+  width: 100%;
 }
 
 .auth-google-mark {

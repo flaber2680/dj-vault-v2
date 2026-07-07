@@ -5,6 +5,7 @@ type AuthCardProps = {
   title: string;
   description: string;
   action: (formData: FormData) => Promise<void>;
+  googleAction: () => Promise<void>;
   error?: string;
 };
 
@@ -13,6 +14,7 @@ export function AuthCard({
   title,
   description,
   action,
+  googleAction,
   error,
 }: AuthCardProps) {
   const isRegister = mode === "register";
@@ -84,12 +86,14 @@ export function AuthCard({
           <span>или</span>
         </div>
 
-        <a className="auth-google" href="/api/auth/google">
-          <span className="auth-google-mark">G</span>
-          <span>
-            {isRegister ? "Регистрация через Google" : "Войти через Google"}
-          </span>
-        </a>
+        <form action={googleAction} className="auth-provider-form">
+          <button className="auth-google" type="submit">
+            <span className="auth-google-mark">G</span>
+            <span>
+              {isRegister ? "Регистрация через Google" : "Войти через Google"}
+            </span>
+          </button>
+        </form>
 
         <p className="auth-switch">
           {isRegister ? "Уже есть доступ?" : "Еще нет аккаунта?"}{" "}
