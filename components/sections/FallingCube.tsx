@@ -18,19 +18,21 @@ export function FallingCube() {
         return;
       }
 
-      const documentHeight = document.documentElement.scrollHeight;
-      const maxScroll = Math.max(1, documentHeight - window.innerHeight);
-      const progress = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+      const heroTravel = Math.max(1, window.innerHeight * .9);
+      const progress = Math.min(1, Math.max(0, window.scrollY / heroTravel));
       const cubeHeight = cube.offsetHeight;
       const startY = -cubeHeight - 120;
       const endY = window.innerHeight + cubeHeight * .35;
       const y = startY + (endY - startY) * progress;
       const x = Math.sin(progress * Math.PI * 1.2) * 90;
       const rotation = -18 + progress * 82;
+      const fadeProgress = Math.min(1, Math.max(0, (progress - .38) / .32));
+      const opacity = 1 - fadeProgress;
 
       cube.style.setProperty("--cube-x", `${x}px`);
       cube.style.setProperty("--cube-y", `${y}px`);
       cube.style.setProperty("--cube-rotation", `${rotation}deg`);
+      cube.style.setProperty("--cube-opacity", `${opacity}`);
     };
 
     const requestUpdate = () => {

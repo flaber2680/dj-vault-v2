@@ -24,7 +24,7 @@ export default async function CollectionsPage() {
             <span>Подборки DJ Vault</span>
           </div>
 
-          <h1>Подборки, которые можно сразу брать в сет</h1>
+          <h1>Подборки DJ Vault</h1>
 
           <p>
             Каждую неделю архив пополняется готовым выпуском: отобранные треки,
@@ -54,6 +54,17 @@ export default async function CollectionsPage() {
         </div>
 
         <div className="collections-list">
+          {collections.length === 0 ? (
+            <div className="collections-empty" data-reveal>
+              <span>Архив готовится</span>
+              <h2>Подборки скоро появятся</h2>
+              <p>
+                Сейчас список пустой. Новые выпуски появятся здесь сразу после
+                публикации.
+              </p>
+            </div>
+          ) : null}
+
           {collections.map((collection) => (
             <article
               className="collection-card"
