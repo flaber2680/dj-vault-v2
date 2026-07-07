@@ -180,6 +180,7 @@ export async function LibraryBlocks() {
           </Link>
         </div>
 
+        {latestCollection ? (
         <article className="release-card" data-reveal>
           <div className="release-card-head">
             <span className="release-label">Последний выпуск</span>
@@ -198,6 +199,7 @@ export async function LibraryBlocks() {
 
           <div className="release-lock">Доступ по членству</div>
         </article>
+        ) : null}
       </section>
 
       <section className="library-section archives-section" id="archive" data-reveal>
