@@ -32,28 +32,14 @@ export async function Hero() {
                 data-reveal
                 style={revealDelay("90ms")}
               >
-                Подборки
+                Меньше поиска.
               </span>
               <span
                 className="hero-title-line"
                 data-reveal
                 style={revealDelay("160ms")}
               >
-                без
-              </span>
-              <span
-                className="hero-title-line"
-                data-reveal
-                style={revealDelay("230ms")}
-              >
-                гигабайт
-              </span>
-              <span
-                className="hero-title-line"
-                data-reveal
-                style={revealDelay("300ms")}
-              >
-                мусора
+                Больше музыки.
               </span>
             </h1>
 
@@ -62,9 +48,8 @@ export async function Hero() {
               data-reveal
               style={revealDelay("390ms")}
             >
-              Вам больше не придется перебирать тонны проходного материала.
-              Я отслушал новые релизы, отсек лишнее и оставил треки, которые
-              можно брать в сет.
+              Вам не придётся переслушивать сотни треков. Я уже отобрал
+              релизы, которые можно брать в сет.
             </p>
 
             <div
