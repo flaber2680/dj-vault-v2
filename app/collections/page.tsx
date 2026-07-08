@@ -5,6 +5,7 @@ import {
   getCollections,
   getDemoCollection,
 } from "@/lib/content/collections";
+import { getRemainingDownloadCount } from "@/lib/downloads/store";
 
 type CollectionsPageProps = {
   searchParams?: Promise<{
@@ -19,6 +20,14 @@ const downloadMessages: Record<string, string> = {
   storage: "Не удалось подготовить временную ссылку. Напишите в поддержку.",
 };
 
+function formatDownloadsLeft(remaining: number, limit: number) {
+  if (remaining <= 0) {
+    return "Лимит скачивания исчерпан";
+  }
+
+  return `Осталось скачиваний: ${remaining} из ${limit}`;
+}
+
 export default async function CollectionsPage({
   searchParams,
 }: CollectionsPageProps) {
@@ -31,6 +40,27 @@ export default async function CollectionsPage({
     params.download && params.collection
       ? downloadMessages[params.download]
       : undefined;
+  const demoDownloadsLeft = user
+    ? await getRemainingDownloadCount(
+        user.id,
+        demoCollection.number,
+        demoCollection.downloadLimit,
+      )
+    : null;
+  const collectionDownloadsLeft = new Map(
+    user
+      ? await Promise.all(
+          collections.map(async (collection) => [
+            collection.number,
+            await getRemainingDownloadCount(
+              user.id,
+              collection.number,
+              collection.downloadLimit,
+            ),
+          ] as const),
+        )
+      : [],
+  );
 
   return (
     <main className="page">
@@ -79,6 +109,14 @@ export default async function CollectionsPage({
                   {demoCollection.size} · {demoCollection.tracks}
                 </span>
                 <span>{demoCollection.genres}</span>
+                {demoDownloadsLeft !== null ? (
+                  <span>
+                    {formatDownloadsLeft(
+                      demoDownloadsLeft,
+                      demoCollection.downloadLimit,
+                    )}
+                  </span>
+                ) : null}
               </div>
 
               {demoCollection.description ? (
@@ -88,7 +126,14 @@ export default async function CollectionsPage({
               ) : null}
 
               <div className="collection-card-action">
-                {demoCollection.s3Key ? (
+                {demoDownloadsLeft === 0 ? (
+                  <span
+                    className="button-outline button-disabled"
+                    aria-disabled="true"
+                  >
+                    <span className="button-label">Лимит исчерпан</span>
+                  </span>
+                ) : demoCollection.s3Key ? (
                   <a
                     className="button-outline"
                     href={`/api/download/${demoCollection.number}`}
@@ -126,53 +171,77 @@ export default async function CollectionsPage({
           ) : null}
 
           {collections.map((collection) => (
-            <article
-              className="collection-card"
-              id={`collection-${collection.number}`}
-              key={collection.number}
-              data-reveal
-            >
-              <div className="collection-card-head">
-                <span>#{collection.number}</span>
-                <strong>{collection.date}</strong>
-              </div>
+            (() => {
+              const downloadsLeft =
+                collectionDownloadsLeft.get(collection.number) ?? null;
 
-              <h2>Выпуск #{collection.number}</h2>
+              return (
+                <article
+                  className="collection-card"
+                  id={`collection-${collection.number}`}
+                  key={collection.number}
+                  data-reveal
+                >
+                  <div className="collection-card-head">
+                    <span>#{collection.number}</span>
+                    <strong>{collection.date}</strong>
+                  </div>
 
-              <div className="collection-card-meta">
-                <span>
-                  {collection.size} · {collection.tracks}
-                </span>
-                <span>{collection.genres}</span>
-              </div>
+                  <h2>Выпуск #{collection.number}</h2>
 
-              {hasPaidPlan ? (
-                <div className="collection-card-action">
-                  {collection.s3Key ? (
-                    <a
-                      className="button-outline"
-                      href={`/api/download/${collection.number}`}
-                    >
-                      <span className="button-label">Скачать подборку</span>
-                    </a>
-                  ) : (
-                    <span
-                      className="button-outline button-disabled"
-                      aria-disabled="true"
-                    >
-                      <span className="button-label">Материал скоро появится</span>
+                  <div className="collection-card-meta">
+                    <span>
+                      {collection.size} · {collection.tracks}
                     </span>
-                  )}
+                    <span>{collection.genres}</span>
+                    {downloadsLeft !== null ? (
+                      <span>
+                        {formatDownloadsLeft(
+                          downloadsLeft,
+                          collection.downloadLimit,
+                        )}
+                      </span>
+                    ) : null}
+                  </div>
 
-                  {params.collection === collection.number &&
-                  activeDownloadMessage ? (
-                    <p className="collection-download-message">
-                      {activeDownloadMessage}
-                    </p>
+                  {hasPaidPlan ? (
+                    <div className="collection-card-action">
+                      {downloadsLeft === 0 ? (
+                        <span
+                          className="button-outline button-disabled"
+                          aria-disabled="true"
+                        >
+                          <span className="button-label">Лимит исчерпан</span>
+                        </span>
+                      ) : collection.s3Key ? (
+                        <a
+                          className="button-outline"
+                          href={`/api/download/${collection.number}`}
+                        >
+                          <span className="button-label">Скачать подборку</span>
+                        </a>
+                      ) : (
+                        <span
+                          className="button-outline button-disabled"
+                          aria-disabled="true"
+                        >
+                          <span className="button-label">
+                            Материал скоро появится
+                          </span>
+                        </span>
+                      )}
+
+                      {params.collection === collection.number &&
+                      activeDownloadMessage ? (
+                        <p className="collection-download-message">
+                          {activeDownloadMessage}
+                        </p>
+                      ) : null}
+                    </div>
                   ) : null}
-                </div>
-              ) : null}
-            </article>
+                </article>
+              );
+            })()
           ))}
         </div>
       </section>

@@ -58,6 +58,17 @@ export async function getDownloadRecord(userId: string, archiveId: string) {
   );
 }
 
+export async function getRemainingDownloadCount(
+  userId: string,
+  archiveId: string,
+  limit: number,
+) {
+  const record = await getDownloadRecord(userId, archiveId);
+  const used = record?.downloadCount ?? 0;
+
+  return Math.max(0, limit - used);
+}
+
 export async function registerDownloadAttempt({
   archiveId,
   ipAddress,
