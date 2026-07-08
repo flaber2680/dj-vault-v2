@@ -81,6 +81,14 @@ async function saveToOutbox(message: EmailMessage, reason: string) {
   await writeFile(outboxFile, JSON.stringify(outbox, null, 2), "utf8");
 }
 
+async function safeSaveToOutbox(message: EmailMessage, reason: string) {
+  try {
+    await saveToOutbox(message, reason);
+  } catch (error) {
+    console.error("MAIL_OUTBOX_WRITE_FAILED", error);
+  }
+}
+
 function envelopeEmail(value: string) {
   const match = value.match(/<([^>]+)>/);
 
@@ -231,7 +239,7 @@ async function sendViaSmtp(message: EmailMessage, config: SmtpConfig) {
       await session.command(`EHLO ${config.host}`);
     }
 
-    await session.command(`AUTH LOGIN`);
+    await session.command("AUTH LOGIN", 334);
     await session.command(Buffer.from(config.user).toString("base64"), 334);
     await session.command(Buffer.from(config.pass).toString("base64"), 235);
     await session.command(`MAIL FROM:<${from}>`);
@@ -248,11 +256,21 @@ export async function sendEmail(message: EmailMessage) {
   const config = getSmtpConfig();
 
   if (!config) {
-    await saveToOutbox(message, "SMTP_NOT_CONFIGURED");
+    await safeSaveToOutbox(message, "SMTP_NOT_CONFIGURED");
     return { sent: false };
   }
 
-  await sendViaSmtp(message, config);
+  try {
+    await sendViaSmtp(message, config);
+  } catch (error) {
+    const reason =
+      error instanceof Error ? `SMTP_SEND_FAILED:${error.message}` : "SMTP_SEND_FAILED";
+
+    console.error("SMTP_SEND_FAILED", error);
+    await safeSaveToOutbox(message, reason);
+
+    return { sent: false };
+  }
 
   return { sent: true };
 }
