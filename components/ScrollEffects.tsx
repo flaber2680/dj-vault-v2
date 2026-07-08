@@ -11,6 +11,9 @@ export function ScrollEffects() {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+    const isTouchDevice =
+      window.matchMedia("(hover: none)").matches ||
+      window.matchMedia("(pointer: coarse)").matches;
 
     const updateHeader = () => {
       body.classList.toggle("is-scrolled", window.scrollY > 8);
@@ -21,7 +24,7 @@ export function ScrollEffects() {
 
     window.addEventListener("scroll", updateHeader, { passive: true });
 
-    if (prefersReducedMotion) {
+    if (prefersReducedMotion || isTouchDevice) {
       items.forEach((item) => item.classList.add("is-visible"));
 
       return () => {

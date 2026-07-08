@@ -2272,8 +2272,22 @@ body.is-scrolled .header {
 }
 
 @media (hover: none), (pointer: coarse), (max-width: 768px) {
+  body::before {
+    opacity: .1;
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
   .cursor-trail {
     display: none;
+  }
+
+  .reveal-ready [data-reveal],
+  .reveal-ready [data-reveal].is-visible {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
   }
 }
 

@@ -31,7 +31,7 @@ export async function Header() {
       <div className="header-actions">
         {user ? <span className="header-plan">{planLabels[user.plan]}</span> : null}
 
-        <Link className="header-button" href={user ? "/account" : "/login"}>
+        <Link className="header-button" href={user ? "/account" : "/login"} prefetch={false}>
           <span className="button-label">{user ? "Кабинет" : "Войти"}</span>
         </Link>
       </div>
