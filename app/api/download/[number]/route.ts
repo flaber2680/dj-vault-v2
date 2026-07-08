@@ -13,8 +13,16 @@ type RouteContext = {
   }>;
 };
 
+function getAppBaseUrl(request: NextRequest) {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.AUTH_URL ??
+    request.nextUrl.origin
+  );
+}
+
 function redirectTo(path: string, request: NextRequest) {
-  return NextResponse.redirect(new URL(path, request.url));
+  return NextResponse.redirect(new URL(path, getAppBaseUrl(request)));
 }
 
 function redirectToCollections(
@@ -22,7 +30,7 @@ function redirectToCollections(
   download: string,
   collectionNumber: string,
 ) {
-  const url = new URL("/collections", request.url);
+  const url = new URL("/collections", getAppBaseUrl(request));
 
   url.searchParams.set("download", download);
   url.searchParams.set("collection", collectionNumber);
