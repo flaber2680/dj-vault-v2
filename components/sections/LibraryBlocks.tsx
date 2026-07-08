@@ -218,22 +218,24 @@ export async function LibraryBlocks() {
           </Link>
         </div>
 
-        <div className="archive-list">
-          {collections.slice(0, 3).map((archive) => (
-            <Link
-              className="archive-row"
-              href={`/collections#collection-${archive.number}`}
-              key={archive.number}
-              data-reveal
-            >
-              <span>Выпуск #{archive.number}</span>
-              <strong>{archive.date}</strong>
-              <p>
-                {archive.size} · {archive.genres}
-              </p>
-            </Link>
-          ))}
-        </div>
+        {collections.length > 0 ? (
+          <div className="archive-list">
+            {collections.slice(0, 3).map((archive) => (
+              <Link
+                className="archive-row"
+                href={`/collections#collection-${archive.number}`}
+                key={archive.number}
+                data-reveal
+              >
+                <span>Выпуск #{archive.number}</span>
+                <strong>{archive.date}</strong>
+                <p>
+                  {archive.size} · {archive.genres}
+                </p>
+              </Link>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className="library-section pricing-section" id="pricing" data-reveal>
