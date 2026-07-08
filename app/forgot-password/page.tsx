@@ -3,6 +3,7 @@ import { requestPasswordResetAction } from "@/app/auth/actions";
 
 type ForgotPasswordPageProps = {
   searchParams?: Promise<{
+    email?: string;
     sent?: string;
   }>;
 };
@@ -11,10 +12,8 @@ export default async function ForgotPasswordPage({
   searchParams,
 }: ForgotPasswordPageProps) {
   const params = searchParams ? await searchParams : {};
-  const notice =
-    params.sent === "1"
-      ? "Если аккаунт с такой почтой есть, мы отправили ссылку для восстановления пароля."
-      : undefined;
+  const isSent = params.sent === "1";
+  const email = params.email ?? "";
 
   return (
     <section className="auth-page">
@@ -29,31 +28,50 @@ export default async function ForgotPasswordPage({
           </Link>
         </div>
 
-        <h1 className="auth-title">Вернуть доступ</h1>
+        <h1 className="auth-title">{isSent ? "Проверьте почту" : "Вернуть доступ"}</h1>
         <p className="auth-description">
-          Укажите почту аккаунта. Мы отправим ссылку, по которой можно задать
-          новый пароль.
+          {isSent
+            ? "Если аккаунт с такой почтой есть, мы отправили ссылку для восстановления пароля."
+            : "Укажите почту аккаунта. Мы отправим ссылку, по которой можно задать новый пароль."}
         </p>
 
-        {notice ? <p className="auth-notice">{notice}</p> : null}
+        {isSent ? (
+          <>
+            <div className="auth-confirm">
+              {email ? (
+                <p>
+                  Ссылка отправлена на <strong>{email}</strong>.
+                </p>
+              ) : null}
+              <p>
+                Проверьте входящие и папку спам. Иногда письмо может идти
+                несколько минут.
+              </p>
+            </div>
 
-        <form action={requestPasswordResetAction} className="auth-form">
-          <label className="auth-field">
-            <span>Почта</span>
-            <input
-              className="auth-input"
-              name="email"
-              type="email"
-              autoComplete="email"
-              placeholder="name@email.com"
-              required
-            />
-          </label>
+            <Link className="button-main auth-submit auth-home-link" href="/">
+              <span className="button-label">На главную</span>
+            </Link>
+          </>
+        ) : (
+          <form action={requestPasswordResetAction} className="auth-form">
+            <label className="auth-field">
+              <span>Почта</span>
+              <input
+                className="auth-input"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="name@email.com"
+                required
+              />
+            </label>
 
-          <button className="button-main auth-submit" type="submit">
-            <span className="button-label">Отправить ссылку</span>
-          </button>
-        </form>
+            <button className="button-main auth-submit" type="submit">
+              <span className="button-label">Отправить ссылку</span>
+            </button>
+          </form>
+        )}
 
         <p className="auth-switch">
           Вспомнили пароль? <Link href="/login">Войти</Link>

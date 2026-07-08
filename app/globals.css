@@ -1600,6 +1600,33 @@ body.is-scrolled .header {
   flex: 1;
 }
 
+.auth-confirm {
+  margin-top: 26px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, .28);
+  color: rgba(255, 255, 255, .68);
+  font-size: 12px;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.auth-confirm p {
+  margin: 0;
+}
+
+.auth-confirm p + p {
+  margin-top: 10px;
+}
+
+.auth-confirm strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.auth-home-link {
+  margin-top: 14px;
+}
+
 .auth-forgot {
   justify-self: end;
   color: rgba(255, 255, 255, .62);

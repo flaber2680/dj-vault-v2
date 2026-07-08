@@ -73,12 +73,14 @@ export async function loginWithEmail(formData: FormData) {
 
 export async function requestPasswordResetAction(formData: FormData) {
   const email = formValue(formData, "email");
+  const params = new URLSearchParams({ sent: "1" });
 
   if (email.includes("@")) {
     await requestPasswordReset(email);
+    params.set("email", email);
   }
 
-  redirect("/forgot-password?sent=1");
+  redirect(`/forgot-password?${params.toString()}`);
 }
 
 export async function resetPasswordAction(formData: FormData) {
