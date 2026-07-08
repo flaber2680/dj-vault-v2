@@ -53,35 +53,68 @@ export default async function CollectionsPage({
 
           {!hasPaidPlan ? (
             <div className="collections-actions" id="demo-download">
-              {demoCollection.s3Key ? (
-                <a
-                  className="button-main"
-                  href={`/api/download/${demoCollection.number}`}
-                >
-                  <span className="button-label">Скачать демо</span>
-                </a>
-              ) : (
-                <span className="button-main button-disabled" aria-disabled="true">
-                  <span className="button-label">Демо скоро появится</span>
-                </span>
-              )}
-
-              <a className="button-outline" href="/pricing">
+              <a className="button-main" href="/pricing">
                 <span className="button-label">Вступить в клуб</span>
               </a>
-
-              {params.collection === demoCollection.number &&
-              activeDownloadMessage ? (
-                <p className="collection-download-message">
-                  {activeDownloadMessage}
-                </p>
-              ) : null}
             </div>
           ) : null}
         </div>
 
         <div className="collections-list">
-          {collections.length === 0 ? (
+          {!hasPaidPlan ? (
+            <article
+              className="collection-card collection-card-demo"
+              id={`collection-${demoCollection.number}`}
+              data-reveal
+            >
+              <div className="collection-card-head">
+                <span>Демо</span>
+                <strong>{demoCollection.date}</strong>
+              </div>
+
+              <h2>Демо-подборка</h2>
+
+              <div className="collection-card-meta">
+                <span>
+                  {demoCollection.size} · {demoCollection.tracks}
+                </span>
+                <span>{demoCollection.genres}</span>
+              </div>
+
+              {demoCollection.description ? (
+                <p className="collection-card-description">
+                  {demoCollection.description}
+                </p>
+              ) : null}
+
+              <div className="collection-card-action">
+                {demoCollection.s3Key ? (
+                  <a
+                    className="button-outline"
+                    href={`/api/download/${demoCollection.number}`}
+                  >
+                    <span className="button-label">Скачать демо</span>
+                  </a>
+                ) : (
+                  <span
+                    className="button-outline button-disabled"
+                    aria-disabled="true"
+                  >
+                    <span className="button-label">Демо скоро появится</span>
+                  </span>
+                )}
+
+                {params.collection === demoCollection.number &&
+                activeDownloadMessage ? (
+                  <p className="collection-download-message">
+                    {activeDownloadMessage}
+                  </p>
+                ) : null}
+              </div>
+            </article>
+          ) : null}
+
+          {hasPaidPlan && collections.length === 0 ? (
             <div className="collections-empty" data-reveal>
               <span>Клуб готовится</span>
               <h2>Подборки скоро появятся</h2>

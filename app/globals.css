@@ -1105,6 +1105,14 @@ body.is-scrolled .header {
   text-transform: uppercase;
 }
 
+.collection-card-description {
+  max-width: 540px;
+  margin: -10px 0 34px;
+  color: rgba(255, 255, 255, .64);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .collection-card-action {
   margin-top: auto;
   display: flex;
