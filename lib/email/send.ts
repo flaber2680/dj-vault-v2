@@ -176,13 +176,17 @@ function createSmtpSession(initialSocket: net.Socket) {
     });
   }
 
-  async function command(value: string, expected: number | number[] = 250) {
+  async function command(
+    value: string,
+    expected: number | number[] = 250,
+    label = "COMMAND",
+  ) {
     socket.write(`${value}\r\n`);
     const code = await readResponse();
     const expectedCodes = Array.isArray(expected) ? expected : [expected];
 
     if (!expectedCodes.includes(code)) {
-      throw new Error(`SMTP_UNEXPECTED_RESPONSE_${code}`);
+      throw new Error(`SMTP_${label}_UNEXPECTED_RESPONSE_${code}`);
     }
   }
 
@@ -231,22 +235,24 @@ async function sendViaSmtp(message: EmailMessage, config: SmtpConfig) {
 
   try {
     await session.readResponse();
-    await session.command(`EHLO ${config.host}`);
+    await session.command(`EHLO ${config.host}`, 250, "EHLO");
 
     if (config.startTls) {
-      await session.command("STARTTLS", 220);
+      await session.command("STARTTLS", 220, "STARTTLS");
       await session.upgradeToTls(config.host);
-      await session.command(`EHLO ${config.host}`);
+      await session.command(`EHLO ${config.host}`, 250, "EHLO_TLS");
     }
 
-    await session.command("AUTH LOGIN", 334);
-    await session.command(Buffer.from(config.user).toString("base64"), 334);
-    await session.command(Buffer.from(config.pass).toString("base64"), 235);
-    await session.command(`MAIL FROM:<${from}>`);
-    await session.command(`RCPT TO:<${to}>`, [250, 251]);
-    await session.command("DATA", 354);
-    await session.command(payload);
-    await session.command("QUIT", 221);
+    const authPlain = Buffer.from(`\0${config.user}\0${config.pass}`).toString(
+      "base64",
+    );
+
+    await session.command(`AUTH PLAIN ${authPlain}`, 235, "AUTH_PLAIN");
+    await session.command(`MAIL FROM:<${from}>`, 250, "MAIL_FROM");
+    await session.command(`RCPT TO:<${to}>`, [250, 251], "RCPT_TO");
+    await session.command("DATA", 354, "DATA");
+    await session.command(payload, 250, "MESSAGE_BODY");
+    await session.command("QUIT", 221, "QUIT");
   } finally {
     session.close();
   }
