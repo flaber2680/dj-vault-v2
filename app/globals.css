@@ -433,6 +433,7 @@ body.is-scrolled .header {
 }
 
 .idea-grid,
+.content-grid,
 .demo-section,
 .founder-section {
   display: grid;
@@ -442,6 +443,7 @@ body.is-scrolled .header {
 }
 
 .idea-grid h2,
+.content-grid h2,
 .compare-head h2,
 .demo-copy h2,
 .archives-head h2,
@@ -456,12 +458,14 @@ body.is-scrolled .header {
 }
 
 .section-copy,
+.content-copy,
 .demo-copy,
 .founder-card {
   max-width: 560px;
 }
 
 .section-copy p,
+.content-copy p,
 .demo-copy p,
 .founder-card p,
 .compare-panel p,
@@ -477,6 +481,7 @@ body.is-scrolled .header {
 }
 
 .section-copy p,
+.content-copy p,
 .demo-copy p,
 .founder-card p,
 .compare-panel p,
@@ -523,6 +528,38 @@ body.is-scrolled .header {
 .pricing-card li::before {
   content: "✓";
   margin-right: 8px;
+}
+
+.content-group {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, .18);
+}
+
+.content-group > span {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 255, 255, .24);
+  color: rgba(255, 255, 255, .62);
+  font-size: 10px;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.content-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.content-tags span {
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  color: rgba(255, 255, 255, .72);
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .compare-head {
@@ -2056,6 +2093,7 @@ body.is-scrolled .header {
   }
 
   .idea-grid h2,
+  .content-grid h2,
   .compare-head h2,
   .demo-copy h2,
   .archives-head h2,
@@ -2162,6 +2200,7 @@ body.is-scrolled .header {
   }
 
   .idea-grid,
+  .content-grid,
   .demo-section,
   .founder-section,
   .compare-grid,

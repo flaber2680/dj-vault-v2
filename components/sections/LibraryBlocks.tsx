@@ -28,6 +28,40 @@ const results = [
   "Больше времени на выступления",
 ];
 
+const musicDirections = [
+  "Русская поп-музыка",
+  "Зарубежная поп-музыка",
+  "House",
+  "Afro house",
+  "Indie dance",
+  "Breakbeat",
+  "Drum & bass",
+  "Hip-hop",
+  "Baile",
+  "Tech house",
+  "Retro remixes",
+  "Warm up",
+  "Open format",
+];
+
+const djVersions = [
+  "Original tracks",
+  "Intro edits",
+  "Remixes",
+  "Blends",
+  "Bootlegs",
+  "Специальные версии для сетов",
+];
+
+const partyMoments = [
+  "Разогрев",
+  "Основной танцпол",
+  "Поп-хиты",
+  "Ретро-блоки",
+  "Клубное звучание",
+  "Финальные slow tracks",
+];
+
 export async function LibraryBlocks() {
   const user = await getCurrentUser();
   const collections = await getCollections();
@@ -84,9 +118,58 @@ export async function LibraryBlocks() {
         </div>
       </section>
 
-      <section className="library-section compare-section" data-reveal>
+      <section className="library-section content-section" data-reveal>
         <div className="section-kicker">
           <span>02</span>
+          <span>Что внутри</span>
+        </div>
+
+        <div className="content-grid">
+          <h2>Актуальная DJ-библиотека.</h2>
+
+          <div className="content-copy">
+            <p>
+              В подборки DJ Vault входят треки для разных форматов вечеринки:
+              от разогрева и open format до клубного звучания, ретро-блоков и
+              финальных slow tracks.
+            </p>
+
+            <div className="content-group">
+              <span>Направления</span>
+
+              <div className="content-tags">
+                {musicDirections.map((direction) => (
+                  <span key={direction}>{direction}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="content-group">
+              <span>Версии</span>
+
+              <div className="content-tags">
+                {djVersions.map((version) => (
+                  <span key={version}>{version}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="content-group">
+              <span>Моменты</span>
+
+              <div className="content-tags">
+                {partyMoments.map((moment) => (
+                  <span key={moment}>{moment}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="library-section compare-section" data-reveal>
+        <div className="section-kicker">
+          <span>03</span>
           <span>Знакомо?</span>
         </div>
 
@@ -146,7 +229,7 @@ export async function LibraryBlocks() {
 
         <div className="founder-card">
           <div className="section-kicker">
-            <span>03</span>
+            <span>04</span>
             <span>Основатель</span>
           </div>
 
@@ -168,7 +251,7 @@ export async function LibraryBlocks() {
       <section className="library-section demo-section" data-reveal>
         <div className="demo-copy">
           <div className="section-kicker">
-            <span>04</span>
+            <span>05</span>
             <span>Бесплатный старт</span>
           </div>
 
@@ -208,7 +291,7 @@ export async function LibraryBlocks() {
 
       <section className="library-section archives-section" id="archive" data-reveal>
         <div className="section-kicker">
-          <span>05</span>
+          <span>06</span>
             <span>Клубные выпуски</span>
         </div>
 
@@ -242,7 +325,7 @@ export async function LibraryBlocks() {
 
       <section className="library-section pricing-section" id="pricing" data-reveal>
         <div className="section-kicker">
-          <span>06</span>
+          <span>07</span>
           <span>Тарифы</span>
         </div>
 
