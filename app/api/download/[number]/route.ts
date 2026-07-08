@@ -5,7 +5,11 @@ import {
   DEMO_COLLECTION_NUMBER,
   findCollectionByNumber,
 } from "@/lib/content/collections";
-import { createSignedDownloadUrl, getS3ObjectMetadata } from "@/lib/storage/s3";
+import {
+  createSignedDownloadUrl,
+  getS3ConfigStatus,
+  getS3ObjectMetadata,
+} from "@/lib/storage/s3";
 
 type RouteContext = {
   params: Promise<{
@@ -50,6 +54,22 @@ function getClientIp(request: NextRequest) {
   );
 }
 
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      details:
+        "details" in error
+          ? (error as { details?: unknown }).details
+          : undefined,
+    };
+  }
+
+  return error;
+}
+
 export async function GET(request: NextRequest, context: RouteContext) {
   const { number } = await context.params;
   const collection = await findCollectionByNumber(number);
@@ -77,15 +97,30 @@ export async function GET(request: NextRequest, context: RouteContext) {
   let signedUrl: string;
 
   try {
-    const metadata = await getS3ObjectMetadata(collection.s3Key);
-
-    if (!metadata) {
-      return redirectToCollections(request, "storage", collection.number);
-    }
-
     signedUrl = createSignedDownloadUrl(collection.s3Key);
-  } catch {
+  } catch (error) {
+    console.error("[download] failed to create S3 signed URL", {
+      collectionNumber: collection.number,
+      s3Key: collection.s3Key,
+      s3: getS3ConfigStatus(),
+      error: serializeError(error),
+    });
+
     return redirectToCollections(request, "storage", collection.number);
+  }
+
+  try {
+    await getS3ObjectMetadata(collection.s3Key);
+  } catch (error) {
+    console.error(
+      "[download] S3 metadata check failed; redirecting to signed URL anyway",
+      {
+        collectionNumber: collection.number,
+        s3Key: collection.s3Key,
+        s3: getS3ConfigStatus(),
+        error: serializeError(error),
+      },
+    );
   }
 
   const download = await registerDownloadAttempt({

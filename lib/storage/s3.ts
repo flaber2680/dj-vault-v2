@@ -15,6 +15,22 @@ export type S3ObjectMetadata = {
   lastModified?: string;
 };
 
+export class S3RequestError extends Error {
+  constructor(
+    message: string,
+    public readonly details: {
+      key: string;
+      method: "GET" | "HEAD";
+      status?: number;
+      statusText?: string;
+      body?: string;
+    },
+  ) {
+    super(message);
+    this.name = "S3RequestError";
+  }
+}
+
 const defaultSignedUrlTtl = 15 * 60;
 
 function getS3Config(): S3Config | null {
@@ -39,6 +55,32 @@ function getS3Config(): S3Config | null {
     accessKey,
     secretKey,
     addressingStyle,
+  };
+}
+
+export function getS3ConfigStatus() {
+  const config = getS3Config();
+
+  if (!config) {
+    return {
+      configured: false,
+      endpoint: process.env.S3_ENDPOINT?.replace(/\/$/, "") ?? null,
+      region: process.env.S3_REGION ?? null,
+      bucket: process.env.S3_BUCKET ?? null,
+      addressingStyle: process.env.S3_ADDRESSING_STYLE ?? null,
+      hasAccessKey: Boolean(process.env.S3_ACCESS_KEY),
+      hasSecretKey: Boolean(process.env.S3_SECRET_KEY),
+    };
+  }
+
+  return {
+    configured: true,
+    endpoint: config.endpoint,
+    region: config.region,
+    bucket: config.bucket,
+    addressingStyle: config.addressingStyle,
+    hasAccessKey: true,
+    hasSecretKey: true,
   };
 }
 
@@ -184,7 +226,15 @@ export async function getS3ObjectMetadata(
   });
 
   if (!response.ok) {
-    return null;
+    const body = await response.text().catch(() => "");
+
+    throw new S3RequestError("S3_HEAD_FAILED", {
+      key,
+      method: "HEAD",
+      status: response.status,
+      statusText: response.statusText,
+      body: body.slice(0, 500),
+    });
   }
 
   const contentLength = Number(response.headers.get("content-length"));
