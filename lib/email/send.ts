@@ -23,6 +23,7 @@ type SmtpConfig = {
   user: string;
   pass: string;
   from: string;
+  envelopeFrom: string;
   secure: boolean;
   startTls: boolean;
 };
@@ -32,9 +33,10 @@ function getSmtpConfig(): SmtpConfig | null {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   const from = process.env.SMTP_FROM ?? user;
+  const envelopeFrom = process.env.SMTP_ENVELOPE_FROM ?? user;
   const port = Number(process.env.SMTP_PORT ?? "465");
 
-  if (!host || !user || !pass || !from || !Number.isFinite(port)) {
+  if (!host || !user || !pass || !from || !envelopeFrom || !Number.isFinite(port)) {
     return null;
   }
 
@@ -48,6 +50,7 @@ function getSmtpConfig(): SmtpConfig | null {
     user,
     pass,
     from,
+    envelopeFrom,
     secure,
     startTls: process.env.SMTP_STARTTLS
       ? process.env.SMTP_STARTTLS === "true"
@@ -143,7 +146,7 @@ function createSmtpSession(initialSocket: net.Socket) {
   let buffer = "";
 
   function readResponse() {
-    return new Promise<number>((resolve, reject) => {
+    return new Promise<{ code: number; line: string }>((resolve, reject) => {
       const onData = (chunk: Buffer) => {
         buffer += chunk.toString("utf8");
         const lines = buffer.split(/\r?\n/);
@@ -156,7 +159,10 @@ function createSmtpSession(initialSocket: net.Socket) {
 
           if (match?.[2] === " ") {
             cleanup();
-            resolve(Number(match[1]));
+            resolve({
+              code: Number(match[1]),
+              line,
+            });
             return;
           }
         }
@@ -182,11 +188,13 @@ function createSmtpSession(initialSocket: net.Socket) {
     label = "COMMAND",
   ) {
     socket.write(`${value}\r\n`);
-    const code = await readResponse();
+    const response = await readResponse();
     const expectedCodes = Array.isArray(expected) ? expected : [expected];
 
-    if (!expectedCodes.includes(code)) {
-      throw new Error(`SMTP_${label}_UNEXPECTED_RESPONSE_${code}`);
+    if (!expectedCodes.includes(response.code)) {
+      throw new Error(
+        `SMTP_${label}_UNEXPECTED_RESPONSE_${response.code}:${response.line}`,
+      );
     }
   }
 
@@ -221,7 +229,7 @@ function createSmtpSession(initialSocket: net.Socket) {
 async function sendViaSmtp(message: EmailMessage, config: SmtpConfig) {
   const socket = await createSocket(config);
   const session = createSmtpSession(socket);
-  const from = envelopeEmail(config.from);
+  const from = envelopeEmail(config.envelopeFrom);
   const to = envelopeEmail(message.to);
   const headers = [
     `From: ${config.from}`,
