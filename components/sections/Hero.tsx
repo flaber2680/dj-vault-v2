@@ -32,28 +32,28 @@ export async function Hero() {
                 data-reveal
                 style={revealDelay("90ms")}
               >
-                DJ Vault —
+                Подборки
               </span>
               <span
                 className="hero-title-line"
                 data-reveal
                 style={revealDelay("160ms")}
               >
-                закрытый
+                без
               </span>
               <span
                 className="hero-title-line"
                 data-reveal
                 style={revealDelay("230ms")}
               >
-                DJ-клуб
+                гигабайт
               </span>
               <span
                 className="hero-title-line"
                 data-reveal
                 style={revealDelay("300ms")}
               >
-                подборок
+                мусора
               </span>
             </h1>
 
@@ -62,8 +62,9 @@ export async function Hero() {
               data-reveal
               style={revealDelay("390ms")}
             >
-              Доступ к качественно отобранным DJ-подборкам для подготовки
-              сетов, мероприятий и выступлений.
+              Вам больше не придется перебирать тонны проходного материала.
+              Я отслушал новые релизы, отсек лишнее и оставил треки, которые
+              можно брать в сет.
             </p>
 
             <div

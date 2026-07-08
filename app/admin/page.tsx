@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
-import { saveCollectionAction } from "@/app/admin/actions";
+import {
+  resetDownloadLimitAction,
+  saveCollectionAction,
+} from "@/app/admin/actions";
 import { Header } from "@/components/layout/Header";
 import { ScrollEffects } from "@/components/ScrollEffects";
 import { isAdminUser } from "@/lib/auth/admin";
 import { getCurrentUser } from "@/lib/auth/session";
+import { getDownloadRecords } from "@/lib/downloads/store";
 import {
   getCollections,
   getDemoCollection,
@@ -12,6 +16,7 @@ import {
 type AdminPageProps = {
   searchParams?: Promise<{
     error?: string;
+    reset?: string;
     saved?: string;
   }>;
 };
@@ -44,8 +49,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   }
 
   const params = searchParams ? await searchParams : {};
-  const collections = await getCollections();
+  const collections = await getCollections({ includeInactive: true });
   const demoCollection = await getDemoCollection();
+  const downloadRecords = await getDownloadRecords();
   const nextNumber = getNextCollectionNumber(collections);
   const items = [demoCollection, ...collections];
 
@@ -63,8 +69,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           <h1>Управление подборками</h1>
           <p>
-            Добавляйте новые выпуски, обновляйте ссылку доступа и данные,
-            которые видны пользователям на странице подборок.
+            Добавляйте выпуски, указывайте S3 object key приватного ZIP-архива
+            и управляйте лимитами скачивания.
           </p>
 
           {params.saved ? (
@@ -75,7 +81,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           {params.error === "required" ? (
             <div className="admin-message admin-message-error">
-              Заполните номер, дату, объем, позиции и жанры.
+              Заполните номер, дату, позиции и жанры.
+            </div>
+          ) : null}
+
+          {params.error === "reset_required" ? (
+            <div className="admin-message admin-message-error">
+              Укажите user_id и номер архива для сброса лимита.
+            </div>
+          ) : null}
+
+          {params.reset ? (
+            <div className="admin-message">
+              Лимит скачивания для архива #{params.reset} сброшен.
             </div>
           ) : null}
         </div>
@@ -110,17 +128,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               />
             </label>
 
-            <div className="admin-field-grid">
-              <label className="admin-field">
-                <span>Объем</span>
-                <input name="size" placeholder="4.28 GB" required />
-              </label>
-
-              <label className="admin-field">
-                <span>Позиции</span>
-                <input name="tracks" placeholder="150+ позиций" required />
-              </label>
-            </div>
+            <label className="admin-field">
+              <span>Позиции</span>
+              <input name="tracks" placeholder="150+ позиций" required />
+            </label>
 
             <label className="admin-field">
               <span>Жанры</span>
@@ -132,13 +143,33 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </label>
 
             <label className="admin-field">
-              <span>Ссылка доступа</span>
+              <span>S3 object key</span>
                 <input
-                  name="downloadUrl"
-                  placeholder="https://..."
-                  type="url"
+                  name="s3Key"
+                  placeholder="archives/001.zip"
                 />
             </label>
+
+            <div className="admin-field-grid">
+              <label className="admin-field">
+                <span>Лимит скачиваний</span>
+                <input
+                  name="downloadLimit"
+                  placeholder="2"
+                  type="number"
+                  min={1}
+                  defaultValue={2}
+                />
+              </label>
+
+              <div className="admin-field admin-check-field">
+                <span>Статус</span>
+                <label className="admin-checkbox">
+                  <input name="isActive" type="checkbox" defaultChecked />
+                  <span>Активен</span>
+                </label>
+              </div>
+            </div>
 
             <label className="admin-field">
               <span>Описание</span>
@@ -151,7 +182,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             <p className="admin-hint">
               Чтобы обновить существующий выпуск, укажите тот же номер. Номер
-              demo обновит демо-подборку.
+              demo обновит демо-подборку. Объем подтянется из S3 по object key,
+              если переменные S3 настроены.
             </p>
 
             <button className="button-main admin-submit" type="submit">
@@ -179,10 +211,64 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 </p>
 
                 <em>
-                  {collection.downloadUrl
-                    ? "Ссылка добавлена"
-                    : "Материал не добавлен"}
+                  {collection.s3Key
+                    ? collection.s3Key
+                    : "S3 object key не добавлен"}
                 </em>
+              </article>
+            ))}
+          </div>
+
+          <form
+            className="admin-card admin-form"
+            action={resetDownloadLimitAction}
+            data-reveal
+          >
+            <div className="admin-card-head">
+              <span>Сброс лимита</span>
+              <strong>По пользователю</strong>
+            </div>
+
+            <label className="admin-field">
+              <span>User ID</span>
+              <input name="userId" placeholder="user_id" required />
+            </label>
+
+            <label className="admin-field">
+              <span>Номер архива</span>
+              <input name="archiveId" placeholder="001" required />
+            </label>
+
+            <button className="button-outline admin-submit" type="submit">
+              <span className="button-label">Сбросить лимит</span>
+            </button>
+          </form>
+
+          <div className="admin-card admin-list" data-reveal>
+            <div className="admin-card-head">
+              <span>Скачивания</span>
+              <strong>{downloadRecords.length} записей</strong>
+            </div>
+
+            {downloadRecords.length === 0 ? (
+              <p className="admin-hint">Пока нет записей скачивания.</p>
+            ) : null}
+
+            {downloadRecords.map((record) => (
+              <article
+                className="admin-row"
+                key={`${record.userId}-${record.archiveId}`}
+              >
+                <div>
+                  <span>#{record.archiveId}</span>
+                  <strong>{record.downloadCount} попыток</strong>
+                </div>
+
+                <p>
+                  USER: {record.userId}
+                  <br />
+                  ПОСЛЕДНЕЕ: {record.downloadedAt ?? "нет"}
+                </p>
               </article>
             ))}
           </div>

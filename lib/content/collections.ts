@@ -1,23 +1,31 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
+import { formatBytes, getS3ObjectMetadata } from "@/lib/storage/s3";
 
 export type CollectionItem = {
   number: string;
   date: string;
   size: string;
+  sizeBytes?: number;
   genres: string;
   description: string;
   tracks: string;
-  downloadUrl?: string;
+  s3Key?: string;
+  isActive: boolean;
+  downloadLimit: number;
 };
 
 export type CollectionInput = {
   number: string;
   date: string;
-  size: string;
+  size?: string;
+  sizeBytes?: number;
   genres: string;
   description?: string;
   tracks: string;
+  s3Key?: string;
+  downloadLimit?: string | number;
+  isActive?: boolean;
   downloadUrl?: string;
 };
 
@@ -43,7 +51,9 @@ export const demoCollection: CollectionItem = {
   description:
     "Короткий демо-выпуск, чтобы оценить качество отбора и формат подборки.",
   tracks: "Демо выпуск",
-  downloadUrl: "",
+  s3Key: "",
+  isActive: true,
+  downloadLimit: 2,
 };
 
 export const collections: CollectionItem[] = [
@@ -55,7 +65,9 @@ export const collections: CollectionItem[] = [
     description:
       "Свежий выпуск для клубного сета: плотный грув, понятная структура и аккуратный отбор.",
     tracks: "150+ позиций",
-    downloadUrl: "",
+    s3Key: "",
+    isActive: true,
+    downloadLimit: 2,
   },
   {
     number: "026",
@@ -65,7 +77,9 @@ export const collections: CollectionItem[] = [
     description:
       "Собранная подборка для разгона танцпола и середины ночи, где важны энергия и чистая динамика.",
     tracks: "130+ позиций",
-    downloadUrl: "",
+    s3Key: "",
+    isActive: true,
+    downloadLimit: 2,
   },
   {
     number: "025",
@@ -75,7 +89,9 @@ export const collections: CollectionItem[] = [
     description:
       "Более атмосферный выпуск с плотной драматургией для длинных сетов и аккуратных переходов.",
     tracks: "160+ позиций",
-    downloadUrl: "",
+    s3Key: "",
+    isActive: true,
+    downloadLimit: 2,
   },
   {
     number: "024",
@@ -85,7 +101,9 @@ export const collections: CollectionItem[] = [
     description:
       "Теплая подборка с вокальными хуками, перкуссией и материалом для плавного сета.",
     tracks: "140+ позиций",
-    downloadUrl: "",
+    s3Key: "",
+    isActive: true,
+    downloadLimit: 2,
   },
 ];
 
@@ -96,13 +114,20 @@ function normalizeCollectionNumber(number: string) {
 function normalizeCollection(input: CollectionInput): CollectionItem {
   const number = normalizeCollectionNumber(input.number);
   const date = input.date.trim();
-  const size = input.size.trim();
+  const sizeBytes = input.sizeBytes;
+  const size = input.size?.trim() || formatBytes(sizeBytes) || "Размер не проверен";
   const genres = input.genres.trim();
   const tracks = input.tracks.trim();
   const description = input.description?.trim() ?? "";
-  const downloadUrl = input.downloadUrl?.trim() ?? "";
+  const legacyDownloadUrl = input.downloadUrl?.trim() ?? "";
+  const s3Key =
+    input.s3Key?.trim() ||
+    (legacyDownloadUrl && !/^https?:\/\//i.test(legacyDownloadUrl)
+      ? legacyDownloadUrl
+      : "");
+  const downloadLimit = Number(input.downloadLimit ?? 2);
 
-  if (!number || !date || !size || !genres || !tracks) {
+  if (!number || !date || !genres || !tracks) {
     throw new Error("INVALID_COLLECTION");
   }
 
@@ -110,11 +135,38 @@ function normalizeCollection(input: CollectionInput): CollectionItem {
     number,
     date,
     size,
+    sizeBytes,
     genres,
     description,
     tracks,
-    downloadUrl,
+    s3Key,
+    isActive: input.isActive ?? true,
+    downloadLimit: Number.isFinite(downloadLimit) && downloadLimit > 0 ? downloadLimit : 2,
   };
+}
+
+async function enrichCollectionFromS3(input: CollectionInput) {
+  const s3Key = input.s3Key?.trim();
+
+  if (!s3Key) {
+    return input;
+  }
+
+  try {
+    const metadata = await getS3ObjectMetadata(s3Key);
+
+    if (!metadata?.contentLength) {
+      return input;
+    }
+
+    return {
+      ...input,
+      size: formatBytes(metadata.contentLength),
+      sizeBytes: metadata.contentLength,
+    };
+  } catch {
+    return input;
+  }
 }
 
 function sortCollections(items: CollectionItem[]) {
@@ -161,12 +213,18 @@ async function getMergedCollections() {
   return Array.from(byNumber.values());
 }
 
-export async function getCollections() {
+export async function getCollections(
+  options: {
+    includeInactive?: boolean;
+  } = {},
+) {
   const mergedCollections = await getMergedCollections();
 
   return sortCollections(
     mergedCollections.filter(
-      (collection) => collection.number !== DEMO_COLLECTION_NUMBER,
+      (collection) =>
+        collection.number !== DEMO_COLLECTION_NUMBER &&
+        (options.includeInactive || collection.isActive),
     ),
   );
 }
@@ -198,7 +256,7 @@ export async function findCollectionByNumber(number: string) {
 }
 
 export async function saveCollection(input: CollectionInput) {
-  const collection = normalizeCollection(input);
+  const collection = normalizeCollection(await enrichCollectionFromS3(input));
   const storedCollections = await readStoredCollections();
   const nextCollections = storedCollections.filter(
     (item) => item.number !== collection.number,
