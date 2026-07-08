@@ -23,7 +23,8 @@ export async function Header() {
       <nav className="header-nav">
         {!hasPaidPlan ? <Link href="/#service">Идея</Link> : null}
         <Link href="/collections">Подборки</Link>
-        {!hasPaidPlan ? <Link href="/pricing">Тарифы</Link> : null}
+        {!hasPaidPlan ? <Link href="/pricing">Клуб</Link> : null}
+        {!hasPaidPlan ? <Link href="/terms">Документы</Link> : null}
         {isAdminUser(user) ? <Link href="/admin">Админ</Link> : null}
       </nav>
 

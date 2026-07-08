@@ -24,9 +24,9 @@ export const paidPlanList: PaidPlanDetails[] = [
     durationDays: 30,
     badge: "Для знакомства",
     features: [
-      "Доступ ко всем архивам",
+      "Доступ на 30 дней",
       "Еженедельные обновления",
-      "Скачивание через Cloud Mail",
+      "Закрытые DJ-подборки",
     ],
   },
   {
@@ -39,9 +39,9 @@ export const paidPlanList: PaidPlanDetails[] = [
     oldPrice: "3000 ₽",
     badge: "Самый популярный",
     features: [
-      "Доступ ко всем архивам",
+      "Доступ на 3 месяца",
       "Еженедельные обновления",
-      "Скачивание через Cloud Mail",
+      "Клубные подборки DJ Vault",
     ],
   },
   {
@@ -54,9 +54,9 @@ export const paidPlanList: PaidPlanDetails[] = [
     oldPrice: "6000 ₽",
     badge: "Максимальная выгода",
     features: [
-      "Доступ ко всем архивам",
+      "Доступ на 6 месяцев",
       "Еженедельные обновления",
-      "Скачивание через Cloud Mail",
+      "Клубные выпуски и подборки",
     ],
   },
 ];

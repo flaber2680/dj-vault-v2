@@ -5,9 +5,9 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getPaidPlan, paidPlanList } from "@/lib/content/plans";
 
 const planBenefits = [
-  "Доступ ко всем архивам",
+  "Закрытый клуб DJ Vault",
   "Еженедельные обновления",
-  "Скачивание через Cloud Mail",
+  "Качественно отобранные подборки",
 ];
 
 export default async function PricingPage() {
@@ -32,7 +32,7 @@ export default async function PricingPage() {
           <p>
             {isRenewal
               ? `Текущий тариф ${currentPlan?.name ?? "DJ Vault"} сохранится. Выберите срок продления: дни добавятся к текущему остатку.`
-              : "Оформите доступ к закрытой библиотеке, еженедельным подборкам и предыдущим выпускам."}
+              : "Оформите подписку на клуб DJ Vault, закрытые DJ-подборки и еженедельные обновления."}
           </p>
         </div>
 
@@ -70,7 +70,7 @@ export default async function PricingPage() {
                 <div className="plan-action">
                   <Link className="button-outline" href={href}>
                     <span className="button-label">
-                      {isRenewal ? "Добавить дни" : "Оформить подписку"}
+                      {isRenewal ? "Продлить клуб" : "Вступить в клуб"}
                     </span>
                   </Link>
                 </div>

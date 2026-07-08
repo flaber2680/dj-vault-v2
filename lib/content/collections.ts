@@ -41,8 +41,8 @@ export const demoCollection: CollectionItem = {
   size: "Lite",
   genres: "Afro House / Deep House / Tech House",
   description:
-    "Короткая демо-подборка, чтобы проверить структуру архива и качество отбора.",
-  tracks: "Демо треки",
+    "Короткий демо-выпуск, чтобы оценить качество отбора и формат подборки.",
+  tracks: "Демо выпуск",
   downloadUrl: "",
 };
 
@@ -53,8 +53,8 @@ export const collections: CollectionItem[] = [
     size: "4.28 GB",
     genres: "Afro House / Deep House / Tech House / +1",
     description:
-      "Свежий выпуск для клубного сета: плотный грув, понятная структура и треки без проходняка.",
-    tracks: "150+ треков",
+      "Свежий выпуск для клубного сета: плотный грув, понятная структура и аккуратный отбор.",
+    tracks: "150+ позиций",
     downloadUrl: "",
   },
   {
@@ -64,7 +64,7 @@ export const collections: CollectionItem[] = [
     genres: "Tech House / Minimal",
     description:
       "Собранная подборка для разгона танцпола и середины ночи, где важны энергия и чистая динамика.",
-    tracks: "130+ треков",
+    tracks: "130+ позиций",
     downloadUrl: "",
   },
   {
@@ -74,7 +74,7 @@ export const collections: CollectionItem[] = [
     genres: "Melodic House / Techno",
     description:
       "Более атмосферный выпуск с плотной драматургией для длинных сетов и аккуратных переходов.",
-    tracks: "160+ треков",
+    tracks: "160+ позиций",
     downloadUrl: "",
   },
   {
@@ -83,8 +83,8 @@ export const collections: CollectionItem[] = [
     size: "4.12 GB",
     genres: "Afro House / Organic House / Deep",
     description:
-      "Теплая подборка с вокальными хуками, перкуссией и треками, которые легко встроить в сет.",
-    tracks: "140+ треков",
+      "Теплая подборка с вокальными хуками, перкуссией и материалом для плавного сета.",
+    tracks: "140+ позиций",
     downloadUrl: "",
   },
 ];

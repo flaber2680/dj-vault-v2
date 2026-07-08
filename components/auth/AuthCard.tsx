@@ -5,8 +5,8 @@ type AuthCardProps = {
   title: string;
   description: string;
   action: (formData: FormData) => Promise<void>;
-  googleAction: () => Promise<void>;
   error?: string;
+  notice?: string;
 };
 
 export function AuthCard({
@@ -14,8 +14,8 @@ export function AuthCard({
   title,
   description,
   action,
-  googleAction,
   error,
+  notice,
 }: AuthCardProps) {
   const isRegister = mode === "register";
 
@@ -24,7 +24,7 @@ export function AuthCard({
       <div className="auth-card" data-reveal>
         <div className="auth-topline">
           <div className="auth-label">
-            <span>{isRegister ? "Новый доступ" : "Вход в архив"}</span>
+            <span>{isRegister ? "Новый доступ" : "Вход в сервис"}</span>
           </div>
 
           <Link className="auth-back" href="/">
@@ -36,6 +36,7 @@ export function AuthCard({
         <p className="auth-description">{description}</p>
 
         {error ? <p className="auth-error">{error}</p> : null}
+        {notice ? <p className="auth-notice">{notice}</p> : null}
 
         <form action={action} className="auth-form">
           {isRegister ? (
@@ -75,22 +76,15 @@ export function AuthCard({
             />
           </label>
 
+          {!isRegister ? (
+            <Link className="auth-forgot" href="/forgot-password">
+              Забыли пароль?
+            </Link>
+          ) : null}
+
           <button className="button-main auth-submit" type="submit">
             <span className="button-label">
-              {isRegister ? "Создать доступ" : "Войти по почте"}
-            </span>
-          </button>
-        </form>
-
-        <div className="auth-divider">
-          <span>или</span>
-        </div>
-
-        <form action={googleAction} className="auth-provider-form">
-          <button className="auth-google" type="submit">
-            <span className="auth-google-mark">G</span>
-            <span>
-              {isRegister ? "Регистрация через Google" : "Войти через Google"}
+              {isRegister ? "Вступить в клуб" : "Войти по почте"}
             </span>
           </button>
         </form>

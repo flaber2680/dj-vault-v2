@@ -5,25 +5,25 @@ import { paidPlanList } from "@/lib/content/plans";
 
 const ordinarySteps = [
   "Открыть DJ Pool",
-  "Скачать сотни новых треков",
-  "Прослушать большую часть вручную",
-  "Удалить слабые и проходные треки",
-  "Разложить оставшееся по папкам",
+  "Просмотреть сотни новых релизов",
+  "Отслушать большую часть вручную",
+  "Отсеять слабый материал",
+  "Разложить оставшееся по жанрам",
   "Подготовить к сету",
 ];
 
 const vaultSteps = [
   "Открыть DJ Vault",
   "Выбрать свежий выпуск",
-  "Скачать готовую подборку",
+  "Открыть систематизированную подборку",
   "Добавить в Rekordbox / Serato",
   "Играть в своем сете",
 ];
 
 const results = [
-  "Отобранные треки",
-  "Готовые папки по стилям",
-  "MP3 320 kbps",
+  "Отобранные DJ-подборки",
+  "Клубные выпуски",
+  "Качественный материал",
   "Больше времени на выступления",
 ];
 
@@ -33,12 +33,12 @@ export async function LibraryBlocks() {
   const latestCollection = collections[0];
   const hasPaidPlan = user ? user.plan !== "free" : false;
   const accessHref = user ? "/collections" : "/register";
-  const demoLabel = user ? "Смотреть подборки" : "Получить демо архив";
+  const demoLabel = user ? "Открыть подборки" : "Вступить в клуб";
   const pricingLabel = !user
-    ? "Оформить доступ"
+    ? "Вступить в клуб"
     : hasPaidPlan
-      ? "Смотреть подборки"
-      : "Оформить подписку";
+      ? "Открыть подборки"
+      : "Вступить в клуб";
   const getPricingHref = (planId: string) => {
     if (!user) {
       return "/register";
@@ -60,12 +60,13 @@ export async function LibraryBlocks() {
         </div>
 
         <div className="idea-grid">
-          <h2>Музыка без мусора.</h2>
+          <h2>Подборки без лишнего шума.</h2>
 
           <div className="section-copy">
             <p>
-              Вы больше не тратите часы на чистку пулов, прослушивание
-              проходных треков и ручную сортировку. Я делаю эту работу за вас.
+              Вы больше не тратите часы на ручной поиск, сортировку и отбор.
+              DJ Vault собирает качественно отобранные DJ-подборки для
+              подготовки сетов.
             </p>
 
             <div className="result-box">
@@ -98,7 +99,7 @@ export async function LibraryBlocks() {
               <strong>3-4 часа</strong>
             </div>
 
-            <p>Много ручной работы перед каждым сетом.</p>
+            <p>Много ручного отбора перед каждым сетом.</p>
 
             <ol>
               {ordinarySteps.map((step) => (
@@ -107,7 +108,8 @@ export async function LibraryBlocks() {
             </ol>
 
             <small>
-              В итоге время уходит не на творчество, а на фильтрацию мусора.
+              В итоге время уходит не на творчество, а на бесконечную
+              сортировку.
             </small>
           </article>
 
@@ -119,7 +121,7 @@ export async function LibraryBlocks() {
               <strong>5 минут</strong>
             </div>
 
-            <p>Готовая подборка без лишней рутины.</p>
+            <p>Систематизированный выпуск без лишней рутины.</p>
 
             <ul>
               {vaultSteps.map((step) => (
@@ -150,7 +152,7 @@ export async function LibraryBlocks() {
 
           <p>
             Я DJ с 17-летним опытом. Я знаю, сколько времени уходит на поиск
-            действительно качественной музыки. Поэтому каждую неделю собираю
+            действительно подходящего материала. Поэтому каждую неделю собираю
             подборки так, будто готовлю их для собственного сета.
           </p>
 
@@ -171,7 +173,7 @@ export async function LibraryBlocks() {
           <h2>Попробуйте DJ Vault бесплатно</h2>
 
           <p>
-            После регистрации вы получите бесплатный демо-архив. Без оплаты,
+            После регистрации вы получите демо-доступ к клубу. Без оплаты,
             без банковской карты и без обязательств.
           </p>
 
@@ -205,14 +207,14 @@ export async function LibraryBlocks() {
       <section className="library-section archives-section" id="archive" data-reveal>
         <div className="section-kicker">
           <span>05</span>
-          <span>Предыдущие подборки</span>
+            <span>Клубные выпуски</span>
         </div>
 
         <div className="archives-head archives-head-action">
-          <h2>Все предыдущие подборки доступны участникам DJ Vault.</h2>
+          <h2>Предыдущие подборки доступны участникам клуба DJ Vault.</h2>
 
           <Link className="button-outline" href="/collections">
-            <span className="button-label">Открыть страницу подборок</span>
+            <span className="button-label">Открыть подборки</span>
           </Link>
         </div>
 
@@ -224,7 +226,7 @@ export async function LibraryBlocks() {
               key={archive.number}
               data-reveal
             >
-              <span>Подборка недели #{archive.number}</span>
+              <span>Выпуск #{archive.number}</span>
               <strong>{archive.date}</strong>
               <p>
                 {archive.size} · {archive.genres}
@@ -260,9 +262,9 @@ export async function LibraryBlocks() {
               </div>
 
               <ul>
-                <li>Доступ ко всем архивам</li>
+                <li>Закрытый клуб DJ Vault</li>
                 <li>Еженедельные обновления</li>
-                <li>Скачивание через Cloud Mail</li>
+                <li>Качественно отобранные подборки</li>
               </ul>
 
               <div className="plan-action">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { completeCheckout } from "@/app/checkout/actions";
+import { startCheckout } from "@/app/checkout/actions";
 import { Header } from "@/components/layout/Header";
 import { ScrollEffects } from "@/components/ScrollEffects";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -8,8 +8,17 @@ import { getPaidPlan } from "@/lib/content/plans";
 
 type CheckoutPageProps = {
   searchParams?: Promise<{
+    error?: string;
     plan?: string;
   }>;
+};
+
+const checkoutErrors: Record<string, string> = {
+  invalid_method: "Выберите способ оплаты.",
+  payment_link_missing: "ЮKassa не вернула ссылку на оплату. Попробуйте еще раз.",
+  payment_request_failed: "Не удалось создать платеж. Попробуйте еще раз чуть позже.",
+  payments_not_configured:
+    "Оплата еще не настроена на сервере. Добавьте ключи ЮKassa перед запуском.",
 };
 
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
@@ -44,16 +53,16 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
           <h1>{isRenewal ? "Продление подписки" : "Оформление подписки"}</h1>
           <p>
             {isRenewal
-              ? `Ваш текущий тариф ${shownPlan?.name ?? plan.name} сохранится. После оплаты добавится ${plan.durationDays} дней к текущему сроку.`
-              : "Проверьте тариф и подтвердите оплату. Сейчас это тестовый платеж: после нажатия тариф активируется в вашем кабинете."}
+              ? `Ваша текущая подписка ${shownPlan?.name ?? plan.name} сохранится. После оплаты добавится ${plan.durationDays} дней к текущему сроку.`
+              : "Проверьте подписку и выберите способ оплаты. Доступ к закрытым DJ-подборкам откроется после подтверждения платежа."}
           </p>
 
           <div className="checkout-return">
-            <Link href="/pricing">Вернуться к тарифам</Link>
+            <Link href="/pricing">Вернуться к клубу</Link>
           </div>
         </div>
 
-        <form action={completeCheckout} className="checkout-card" data-reveal>
+        <form action={startCheckout} className="checkout-card" data-reveal>
           <input name="plan" type="hidden" value={plan.id} />
 
           <div className="checkout-plan-head">
@@ -73,7 +82,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
               <strong>{user.email}</strong>
             </div>
             <div>
-              <span>Доступ</span>
+              <span>Подписка</span>
               <strong>
                 {isRenewal ? "Дни добавятся к остатку" : "Сразу после оплаты"}
               </strong>
@@ -83,22 +92,42 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
           <div className="checkout-methods">
             <span>Способ оплаты</span>
 
-            <div className="checkout-method-grid">
-              <div className="checkout-method checkout-method-active">
-                Банковская карта
-              </div>
-              <div className="checkout-method">СБП</div>
+            <div className="checkout-payment-grid">
+              <button
+                className="button-main checkout-payment-button"
+                name="method"
+                type="submit"
+                value="sbp"
+              >
+                <span className="button-label">Оплатить через СБП</span>
+              </button>
+
+              <button
+                className="button-outline checkout-payment-button"
+                name="method"
+                type="submit"
+                value="bank_card"
+              >
+                <span className="button-label">Оплатить картой</span>
+              </button>
             </div>
           </div>
 
-          <div className="checkout-note">
-            Реальный эквайринг пока не подключен. Эта кнопка имитирует успешную
-            оплату и обновляет срок подписки.
+          <div
+            className={
+              params.error ? "checkout-note checkout-note-error" : "checkout-note"
+            }
+          >
+            {params.error
+              ? (checkoutErrors[params.error] ?? "Оплата не запустилась. Попробуйте еще раз.")
+              : "После оплаты ЮKassa вернет вас на сайт. Если вкладка закроется, доступ все равно обновится после уведомления от платежной системы."}
           </div>
 
-          <button className="button-main checkout-submit" type="submit">
-            <span className="button-label">Оплатить {plan.price}</span>
-          </button>
+          <p className="checkout-terms">
+            Нажимая кнопку оплаты, вы принимаете{" "}
+            <Link href="/terms">условия использования</Link> и{" "}
+            <Link href="/offer">публичную оферту</Link>.
+          </p>
         </form>
       </section>
     </main>

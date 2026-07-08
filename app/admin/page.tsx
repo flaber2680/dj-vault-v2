@@ -61,9 +61,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <span>Подборки</span>
           </div>
 
-          <h1>Управление архивом</h1>
+          <h1>Управление подборками</h1>
           <p>
-            Добавляйте новые выпуски, обновляйте ссылку скачивания и данные,
+            Добавляйте новые выпуски, обновляйте ссылку доступа и данные,
             которые видны пользователям на странице подборок.
           </p>
 
@@ -75,7 +75,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           {params.error === "required" ? (
             <div className="admin-message admin-message-error">
-              Заполните номер, дату, размер, треки и жанры.
+              Заполните номер, дату, объем, позиции и жанры.
             </div>
           ) : null}
         </div>
@@ -112,13 +112,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             <div className="admin-field-grid">
               <label className="admin-field">
-                <span>Размер</span>
+                <span>Объем</span>
                 <input name="size" placeholder="4.28 GB" required />
               </label>
 
               <label className="admin-field">
-                <span>Треки</span>
-                <input name="tracks" placeholder="150+ треков" required />
+                <span>Позиции</span>
+                <input name="tracks" placeholder="150+ позиций" required />
               </label>
             </div>
 
@@ -132,7 +132,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </label>
 
             <label className="admin-field">
-              <span>Ссылка скачивания</span>
+              <span>Ссылка доступа</span>
                 <input
                   name="downloadUrl"
                   placeholder="https://..."
@@ -181,7 +181,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <em>
                   {collection.downloadUrl
                     ? "Ссылка добавлена"
-                    : "Файл не добавлен"}
+                    : "Материал не добавлен"}
                 </em>
               </article>
             ))}

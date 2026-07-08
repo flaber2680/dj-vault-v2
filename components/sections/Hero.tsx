@@ -23,7 +23,7 @@ export async function Hero() {
               data-reveal
               style={revealDelay("0ms")}
             >
-              Закрытая библиотека для DJ
+              Закрытый клуб для DJ
             </div>
 
             <h1 className="hero-title">
@@ -32,28 +32,28 @@ export async function Hero() {
                 data-reveal
                 style={revealDelay("90ms")}
               >
-                Хватит тратить
+                DJ Vault —
               </span>
               <span
                 className="hero-title-line"
                 data-reveal
                 style={revealDelay("160ms")}
               >
-                часы
+                закрытый
               </span>
               <span
                 className="hero-title-line"
                 data-reveal
                 style={revealDelay("230ms")}
               >
-                на перебор
+                DJ-клуб
               </span>
               <span
                 className="hero-title-line"
                 data-reveal
                 style={revealDelay("300ms")}
               >
-                треков
+                подборок
               </span>
             </h1>
 
@@ -62,8 +62,8 @@ export async function Hero() {
               data-reveal
               style={revealDelay("390ms")}
             >
-              Еженедельные подборки релизов, которые реально работают в клубе.
-              Без мусора и лишней траты времени.
+              Доступ к качественно отобранным DJ-подборкам для подготовки
+              сетов, мероприятий и выступлений.
             </p>
 
             <div
@@ -73,12 +73,12 @@ export async function Hero() {
             >
               {!user ? (
                 <Link className="button-main" href="/register">
-                  <span className="button-label">Получить демо архив</span>
+                  <span className="button-label">Вступить в клуб</span>
                 </Link>
               ) : null}
 
               <Link className={user ? "button-main" : "button-outline"} href="/collections">
-                <span className="button-label">Смотреть подборки</span>
+                <span className="button-label">Открыть подборки</span>
               </Link>
             </div>
           </div>

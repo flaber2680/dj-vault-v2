@@ -20,15 +20,15 @@ export default async function CollectionsPage() {
       <section className="collections-page">
         <div className="collections-hero" data-reveal>
           <div className="section-kicker">
-            <span>Архив</span>
-            <span>Подборки DJ Vault</span>
+            <span>Клуб</span>
+            <span>Закрытые подборки</span>
           </div>
 
           <h1>Подборки DJ Vault</h1>
 
           <p>
-            Каждую неделю архив пополняется готовым выпуском: отобранные треки,
-            понятные жанровые папки и материал без лишнего перебора.
+            Каждую неделю клуб пополняется качественно отобранными
+            DJ-подборками для подготовки сетов и выступлений.
           </p>
 
           {!hasPaidPlan ? (
@@ -38,7 +38,7 @@ export default async function CollectionsPage() {
                   className="button-main"
                   href={`/api/download/${demoCollection.number}`}
                 >
-                  <span className="button-label">Скачать демо подборку</span>
+                  <span className="button-label">Открыть демо выпуск</span>
                 </a>
               ) : (
                 <span className="button-main button-disabled" aria-disabled="true">
@@ -47,7 +47,7 @@ export default async function CollectionsPage() {
               )}
 
               <a className="button-outline" href="/pricing">
-                <span className="button-label">Открыть весь архив</span>
+                <span className="button-label">Вступить в клуб</span>
               </a>
             </div>
           ) : null}
@@ -56,7 +56,7 @@ export default async function CollectionsPage() {
         <div className="collections-list">
           {collections.length === 0 ? (
             <div className="collections-empty" data-reveal>
-              <span>Архив готовится</span>
+              <span>Клуб готовится</span>
               <h2>Подборки скоро появятся</h2>
               <p>
                 Сейчас список пустой. Новые выпуски появятся здесь сразу после
@@ -77,7 +77,7 @@ export default async function CollectionsPage() {
                 <strong>{collection.date}</strong>
               </div>
 
-              <h2>Подборка #{collection.number}</h2>
+              <h2>Выпуск #{collection.number}</h2>
 
               <div className="collection-card-meta">
                 <span>
@@ -93,14 +93,14 @@ export default async function CollectionsPage() {
                       className="button-outline"
                       href={`/api/download/${collection.number}`}
                     >
-                      <span className="button-label">Скачать подборку</span>
+                      <span className="button-label">Открыть выпуск</span>
                     </a>
                   ) : (
                     <span
                       className="button-outline button-disabled"
                       aria-disabled="true"
                     >
-                      <span className="button-label">Файл скоро появится</span>
+                      <span className="button-label">Материал скоро появится</span>
                     </span>
                   )}
                 </div>

@@ -81,13 +81,13 @@ export default async function AccountPage() {
 
           <h1 className="auth-title">Ваш доступ активен</h1>
           <p className="auth-description">
-            Здесь будет архив, статусы подписки и быстрые ссылки на свежие
-            подборки.
+            Здесь хранится статус подписки и быстрый переход к закрытым
+            подборкам DJ Vault.
           </p>
         </div>
 
         <div className="account-meta account-status">
-          <span>Тариф</span>
+          <span>Клуб</span>
           <strong className={isFree ? "account-status-free" : "account-status-paid"}>
             {planLabels[user.plan]}
           </strong>
@@ -115,12 +115,12 @@ export default async function AccountPage() {
 
         <div className="account-actions">
           <Link className="button-main" href="/collections">
-            <span className="button-label">К подборкам</span>
+            <span className="button-label">Открыть подборки</span>
           </Link>
 
           {isFree ? (
             <Link className="button-outline" href="/pricing">
-              <span className="button-label">Оформить подписку</span>
+              <span className="button-label">Вступить в клуб</span>
             </Link>
           ) : null}
         </div>

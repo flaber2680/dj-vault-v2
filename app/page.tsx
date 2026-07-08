@@ -18,10 +18,6 @@ export default async function Home() {
       <Header />
       <Hero />
       <LibraryBlocks />
-
-      <footer className="footer">
-        DJ Vault © 2026. Все права защищены.
-      </footer>
     </main>
   );
 }

@@ -1,12 +1,16 @@
 "use server";
 
-import { signIn, signOut } from "@/auth";
+import { signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import {
   createUserWithEmail,
   findUserByEmail,
   verifyPassword,
 } from "@/lib/auth/store";
+import {
+  requestPasswordReset,
+  resetPasswordByToken,
+} from "@/lib/auth/password-reset";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
 
 function formValue(formData: FormData, key: string) {
@@ -17,6 +21,16 @@ function formValue(formData: FormData, key: string) {
 
 function redirectWithError(path: "/login" | "/register", error: string): never {
   redirect(`${path}?error=${encodeURIComponent(error)}`);
+}
+
+function redirectToPasswordReset(error: string, token?: string): never {
+  const params = new URLSearchParams({ error });
+
+  if (token) {
+    params.set("token", token);
+  }
+
+  redirect(`/reset-password?${params.toString()}`);
 }
 
 export async function registerWithEmail(formData: FormData) {
@@ -57,8 +71,35 @@ export async function loginWithEmail(formData: FormData) {
   redirect(user.plan && user.plan !== "free" ? "/collections" : "/account");
 }
 
-export async function signInWithGoogle() {
-  await signIn("google", { redirectTo: "/account" });
+export async function requestPasswordResetAction(formData: FormData) {
+  const email = formValue(formData, "email");
+
+  if (email.includes("@")) {
+    await requestPasswordReset(email);
+  }
+
+  redirect("/forgot-password?sent=1");
+}
+
+export async function resetPasswordAction(formData: FormData) {
+  const token = formValue(formData, "token");
+  const password = formValue(formData, "password");
+
+  if (!token) {
+    redirectToPasswordReset("invalid");
+  }
+
+  if (password.length < 6) {
+    redirectToPasswordReset("short_password", token);
+  }
+
+  try {
+    await resetPasswordByToken(token, password);
+  } catch {
+    redirectToPasswordReset("invalid", token);
+  }
+
+  redirect("/login?reset=success");
 }
 
 export async function logout() {

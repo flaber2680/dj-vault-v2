@@ -7,7 +7,7 @@ const scryptAsync = promisify(scrypt);
 const dataDirectory = path.join(process.cwd(), ".data");
 const usersFile = path.join(dataDirectory, "users.json");
 
-export type AuthProvider = "email" | "google";
+export type AuthProvider = "email";
 export type TariffPlan = "free" | "start" | "pro" | "premium";
 
 export type StoredUser = {
@@ -18,7 +18,6 @@ export type StoredUser = {
   planExpiresAt?: string;
   providers: AuthProvider[];
   passwordHash?: string;
-  googleId?: string;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -33,13 +32,6 @@ export type PublicUser = {
   providers: AuthProvider[];
   avatarUrl?: string;
   createdAt: string;
-};
-
-type GoogleProfile = {
-  googleId: string;
-  email: string;
-  name?: string;
-  avatarUrl?: string;
 };
 
 export function normalizeEmail(email: string) {
@@ -140,6 +132,23 @@ export async function updateUserPlan(
   return getPublicUser(user);
 }
 
+export async function updateUserPassword(id: string, password: string) {
+  const users = await readUsers();
+  const user = users.find((item) => item.id === id);
+
+  if (!user) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  user.passwordHash = await hashPassword(password);
+  user.providers = Array.from(new Set([...user.providers, "email"]));
+  user.updatedAt = new Date().toISOString();
+
+  await writeUsers(users);
+
+  return getPublicUser(user);
+}
+
 export async function createUserWithEmail({
   email,
   password,
@@ -165,56 +174,6 @@ export async function createUserWithEmail({
     plan: "free",
     providers: ["email"],
     passwordHash: await hashPassword(password),
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  users.push(user);
-  await writeUsers(users);
-
-  return getPublicUser(user);
-}
-
-export async function findOrCreateGoogleUser(profile: GoogleProfile) {
-  const users = await readUsers();
-  const normalizedEmail = normalizeEmail(profile.email);
-  const now = new Date().toISOString();
-  const existingGoogleUser = users.find(
-    (user) => user.googleId === profile.googleId,
-  );
-
-  if (existingGoogleUser) {
-    existingGoogleUser.name = profile.name || existingGoogleUser.name;
-    existingGoogleUser.avatarUrl = profile.avatarUrl;
-    existingGoogleUser.updatedAt = now;
-    await writeUsers(users);
-
-    return getPublicUser(existingGoogleUser);
-  }
-
-  const existingEmailUser = users.find((user) => user.email === normalizedEmail);
-
-  if (existingEmailUser) {
-    existingEmailUser.googleId = profile.googleId;
-    existingEmailUser.name = profile.name || existingEmailUser.name;
-    existingEmailUser.avatarUrl = profile.avatarUrl;
-    existingEmailUser.providers = Array.from(
-      new Set([...existingEmailUser.providers, "google"]),
-    );
-    existingEmailUser.updatedAt = now;
-    await writeUsers(users);
-
-    return getPublicUser(existingEmailUser);
-  }
-
-  const user: StoredUser = {
-    id: randomUUID(),
-    email: normalizedEmail,
-    name: profile.name || normalizedEmail.split("@")[0],
-    plan: "free",
-    providers: ["google"],
-    googleId: profile.googleId,
-    avatarUrl: profile.avatarUrl,
     createdAt: now,
     updatedAt: now,
   };
