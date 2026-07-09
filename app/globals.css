@@ -29,24 +29,7 @@ body {
 }
 
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: .16;
-  background-image:
-    radial-gradient(circle at 14% 28%, rgba(255, 255, 255, .34) 0 1px, transparent 1.2px),
-    radial-gradient(circle at 72% 18%, rgba(255, 255, 255, .24) 0 1px, transparent 1.2px),
-    radial-gradient(circle at 42% 74%, rgba(255, 255, 255, .22) 0 1px, transparent 1.2px),
-    radial-gradient(circle at 90% 66%, rgba(255, 255, 255, .18) 0 1px, transparent 1.2px);
-  background-size:
-    37px 37px,
-    53px 53px,
-    71px 71px,
-    97px 97px;
-  animation: noise-drift 12s steps(2, end) infinite;
-  mix-blend-mode: screen;
+  content: none;
 }
 
 a {
@@ -102,23 +85,6 @@ a {
   filter: blur(0);
 }
 
-@keyframes noise-drift {
-  0% {
-    background-position:
-      0 0,
-      0 0,
-      0 0,
-      0 0;
-  }
-
-  100% {
-    background-position:
-      37px 19px,
-      -53px 31px,
-      71px -37px,
-      -97px -49px;
-  }
-}
 
 /* HEADER */
 
@@ -2272,12 +2238,6 @@ body.is-scrolled .header {
 }
 
 @media (hover: none), (pointer: coarse), (max-width: 768px) {
-  body::before {
-    opacity: .1;
-    animation: none;
-    mix-blend-mode: normal;
-  }
-
   .cursor-trail {
     display: none;
   }
@@ -2292,10 +2252,6 @@ body.is-scrolled .header {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body::before {
-    animation: none;
-  }
-
   .cursor-trail {
     display: none;
   }
