@@ -66,14 +66,16 @@ export async function LibraryBlocks() {
   const user = await getCurrentUser();
   const collections = await getCollections();
   const latestCollection = collections[0];
+
   const hasPaidPlan = user ? user.plan !== "free" : false;
-  const accessHref = user ? "/collections" : "/register";
-  const demoLabel = user ? "Открыть подборки" : "Вступить в клуб";
+  const isGuest = !user;
+
   const pricingLabel = !user
     ? "Вступить в клуб"
     : hasPaidPlan
       ? "Открыть подборки"
-      : "Вступить в клуб";
+      : "Оформить доступ";
+
   const getPricingHref = (planId: string) => {
     if (!user) {
       return "/register";
@@ -248,51 +250,53 @@ export async function LibraryBlocks() {
         </div>
       </section>
 
-      <section className="library-section demo-section" data-reveal>
-        <div className="demo-copy">
-          <div className="section-kicker">
-            <span>05</span>
-            <span>Бесплатный старт</span>
+      {isGuest ? (
+        <section className="library-section demo-section" data-reveal>
+          <div className="demo-copy">
+            <div className="section-kicker">
+              <span>05</span>
+              <span>Бесплатный старт</span>
+            </div>
+
+            <h2>Попробуйте DJ Vault бесплатно</h2>
+
+            <p>
+              После регистрации вы получите демо-доступ к клубу. Без оплаты,
+              без банковской карты и без обязательств.
+            </p>
+
+            <Link className="button-main" href="/register">
+              <span className="button-label">Вступить в клуб</span>
+            </Link>
           </div>
 
-          <h2>Попробуйте DJ Vault бесплатно</h2>
+          {latestCollection ? (
+            <article className="release-card" data-reveal>
+              <div className="release-card-head">
+                <span className="release-label">Последний выпуск</span>
+                <span className="release-meta">
+                  {latestCollection.date} · {latestCollection.size}
+                </span>
+              </div>
 
-          <p>
-            После регистрации вы получите демо-доступ к клубу. Без оплаты,
-            без банковской карты и без обязательств.
-          </p>
+              <h3>Подборка #{latestCollection.number}</h3>
 
-          <Link className="button-main" href={accessHref}>
-            <span className="button-label">{demoLabel}</span>
-          </Link>
-        </div>
+              <div className="genre-list">
+                {latestGenres.map((genre) => (
+                  <span key={genre}>{genre}</span>
+                ))}
+              </div>
 
-        {latestCollection ? (
-        <article className="release-card" data-reveal>
-          <div className="release-card-head">
-            <span className="release-label">Последний выпуск</span>
-            <span className="release-meta">
-              {latestCollection.date} · {latestCollection.size}
-            </span>
-          </div>
-
-          <h3>Подборка #{latestCollection.number}</h3>
-
-          <div className="genre-list">
-            {latestGenres.map((genre) => (
-              <span key={genre}>{genre}</span>
-            ))}
-          </div>
-
-          <div className="release-lock">Доступ по членству</div>
-        </article>
-        ) : null}
-      </section>
+              <div className="release-lock">Доступ по членству</div>
+            </article>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="library-section archives-section" id="archive" data-reveal>
         <div className="section-kicker">
-          <span>06</span>
-            <span>Клубные выпуски</span>
+          <span>{isGuest ? "06" : "05"}</span>
+          <span>Клубные выпуски</span>
         </div>
 
         <div className="archives-head archives-head-action">
@@ -325,14 +329,16 @@ export async function LibraryBlocks() {
 
       <section className="library-section pricing-section" id="pricing" data-reveal>
         <div className="section-kicker">
-          <span>07</span>
+          <span>{isGuest ? "07" : "06"}</span>
           <span>Тарифы</span>
         </div>
 
         <div className="pricing-grid">
           {paidPlanList.map((plan) => (
             <article
-              className={`pricing-card${plan.name === "Pro" ? " pricing-card-featured" : ""}`}
+              className={`pricing-card${
+                plan.name === "Pro" ? " pricing-card-featured" : ""
+              }`}
               key={plan.name}
               data-reveal
             >
