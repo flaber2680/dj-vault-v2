@@ -21,7 +21,7 @@ export function AuthCard({
 
   return (
     <section className="auth-page">
-      <div className="auth-card" data-reveal>
+      <div className="auth-card">
         <div className="auth-topline">
           <div className="auth-label">
             <span>{isRegister ? "Новый доступ" : "Вход в сервис"}</span>

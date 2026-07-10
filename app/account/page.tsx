@@ -56,7 +56,7 @@ export default async function AccountPage() {
 
   return (
     <main className="account-page">
-      <section className="account-card" data-reveal>
+      <section className="account-card">
         <div>
           <div className="account-topline">
             <div className="auth-label account-label">

@@ -23,7 +23,7 @@ export default async function ResetPasswordPage({
 
   return (
     <section className="auth-page">
-      <div className="auth-card" data-reveal>
+      <div className="auth-card">
         <div className="auth-topline">
           <div className="auth-label">
             <span>Новый пароль</span>

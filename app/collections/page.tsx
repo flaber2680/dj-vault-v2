@@ -20,12 +20,61 @@ const downloadMessages: Record<string, string> = {
   storage: "Не удалось подготовить временную ссылку. Напишите в поддержку.",
 };
 
+const DEMO_VISIBLE_GENRE_LIMIT = 6;
+
+function parseGenreTips(genres: string) {
+  return genres
+    .split(/[·/]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const match = item.match(/^(.*?)(\d+)$/);
+
+      if (!match) {
+        return {
+          name: item,
+          count: null as null | string,
+        };
+      }
+
+      return {
+        name: match[1].trim(),
+        count: match[2],
+      };
+    });
+}
+
 function formatDownloadsLeft(remaining: number, limit: number) {
   if (remaining <= 0) {
     return "Лимит скачивания исчерпан";
   }
 
-  return `Осталось скачиваний: ${remaining} из ${limit}`;
+  return `Осталось ${remaining} из ${limit} скачиваний`;
+}
+
+function DownloadHint({
+  limit,
+  remaining,
+}: {
+  limit: number;
+  remaining: number | null;
+}) {
+  if (remaining === null || remaining <= 0) {
+    return null;
+  }
+
+  return (
+    <span
+      className="collection-download-hint"
+      tabIndex={0}
+      aria-label={formatDownloadsLeft(remaining, limit)}
+    >
+      i
+      <span className="collection-download-tooltip" role="tooltip">
+        {formatDownloadsLeft(remaining, limit)}
+      </span>
+    </span>
+  );
 }
 
 export default async function CollectionsPage({
@@ -40,6 +89,9 @@ export default async function CollectionsPage({
     params.download && params.collection
       ? downloadMessages[params.download]
       : undefined;
+  const demoGenreTips = parseGenreTips(demoCollection.genres);
+  const visibleDemoGenreTips = demoGenreTips.slice(0, DEMO_VISIBLE_GENRE_LIMIT);
+  const hiddenDemoGenreTips = demoGenreTips.slice(DEMO_VISIBLE_GENRE_LIMIT);
   const demoDownloadsLeft = user
     ? await getRemainingDownloadCount(
         user.id,
@@ -48,7 +100,7 @@ export default async function CollectionsPage({
       )
     : null;
   const collectionDownloadsLeft = new Map(
-    user
+    hasPaidPlan && user
       ? await Promise.all(
           collections.map(async (collection) => [
             collection.number,
@@ -77,8 +129,8 @@ export default async function CollectionsPage({
           <h1>Подборки DJ Vault</h1>
 
           <p>
-            Каждую неделю клуб пополняется качественно отобранными
-            DJ-подборками для подготовки сетов и выступлений.
+            Каждую неделю клуб пополняется качественно отобранными DJ-подборками
+            для подготовки сетов и выступлений.
           </p>
 
           {!hasPaidPlan ? (
@@ -93,68 +145,99 @@ export default async function CollectionsPage({
         <div className="collections-list">
           {!hasPaidPlan ? (
             <article
-              className="collection-card collection-card-demo"
+              className="collection-card collection-card-demo-split"
               id={`collection-${demoCollection.number}`}
               data-reveal
             >
-              <div className="collection-card-head">
-                <span>Демо</span>
-                <strong>{demoCollection.date}</strong>
-              </div>
+              <div className="demo-card-copy">
+                <div className="demo-card-top">
+                  <p>DJ Vault / Demo drop</p>
+                  <div className="demo-card-top-meta">
+                    <span>{demoCollection.tracks}</span>
+                    <span>{demoCollection.size}</span>
+                    <span>{demoCollection.date}</span>
+                  </div>
+                </div>
 
-              <h2>Демо-подборка</h2>
+                <h2>Демо-подборка</h2>
 
-              <div className="collection-card-meta">
-                <span>
-                  {demoCollection.size} · {demoCollection.tracks}
-                </span>
-                <span>{demoCollection.genres}</span>
-                {demoDownloadsLeft !== null ? (
-                  <span>
-                    {formatDownloadsLeft(
-                      demoDownloadsLeft,
-                      demoCollection.downloadLimit,
-                    )}
-                  </span>
-                ) : null}
-              </div>
+                <div
+                  className="demo-card-tip-strip"
+                  aria-label="Жанры демо-подборки"
+                >
+                  {visibleDemoGenreTips.map((tip) => (
+                    <span
+                      className="demo-card-tip"
+                      key={`${tip.name}-${tip.count ?? "none"}`}
+                    >
+                      <span>{tip.name}</span>
+                      {tip.count ? <strong>{tip.count}</strong> : null}
+                    </span>
+                  ))}
+                  {hiddenDemoGenreTips.length > 0 ? (
+                    <span
+                      className="demo-card-more"
+                      tabIndex={0}
+                      aria-label={`Еще ${hiddenDemoGenreTips.length} скрытых стилей`}
+                    >
+                      +{hiddenDemoGenreTips.length}
+                      <span className="demo-card-more-popover" role="tooltip">
+                        {hiddenDemoGenreTips.map((tip) => (
+                          <span
+                            className="demo-card-more-item"
+                            key={`${tip.name}-${tip.count ?? "none"}-hidden`}
+                          >
+                            <span>{tip.name}</span>
+                            {tip.count ? <strong>{tip.count}</strong> : null}
+                          </span>
+                        ))}
+                      </span>
+                    </span>
+                  ) : null}
+                </div>
 
-              {demoCollection.description ? (
-                <p className="collection-card-description">
-                  {demoCollection.description}
-                </p>
-              ) : null}
-
-              <div className="collection-card-action">
-                {demoDownloadsLeft === 0 ? (
-                  <span
-                    className="button-outline button-disabled"
-                    aria-disabled="true"
-                  >
-                    <span className="button-label">Лимит исчерпан</span>
-                  </span>
-                ) : demoCollection.s3Key ? (
-                  <a
-                    className="button-outline"
-                    href={`/api/download/${demoCollection.number}`}
-                  >
-                    <span className="button-label">Скачать демо</span>
-                  </a>
-                ) : (
-                  <span
-                    className="button-outline button-disabled"
-                    aria-disabled="true"
-                  >
-                    <span className="button-label">Демо скоро появится</span>
-                  </span>
-                )}
-
-                {params.collection === demoCollection.number &&
-                activeDownloadMessage ? (
-                  <p className="collection-download-message">
-                    {activeDownloadMessage}
+                {demoCollection.description ? (
+                  <p className="collection-card-description demo-card-description">
+                    {demoCollection.description}
                   </p>
                 ) : null}
+
+                <div className="collection-card-action demo-card-action">
+                  {demoDownloadsLeft === 0 ? (
+                    <span
+                      className="button-outline button-disabled"
+                      aria-disabled="true"
+                    >
+                      <span className="button-label">Лимит исчерпан</span>
+                    </span>
+                  ) : demoCollection.s3Key ? (
+                    <a
+                      className="button-outline"
+                      href={`/api/download/${demoCollection.number}`}
+                    >
+                      <span className="button-label">Скачать демо</span>
+                    </a>
+                  ) : (
+                    <span
+                      className="button-outline button-disabled"
+                      aria-disabled="true"
+                    >
+                      <span className="button-label">Демо скоро появится</span>
+                    </span>
+                  )}
+
+                  <DownloadHint
+                    limit={demoCollection.downloadLimit}
+                    remaining={demoDownloadsLeft}
+                  />
+
+                  {params.collection === demoCollection.number &&
+                  activeDownloadMessage ? (
+                    <p className="collection-download-message">
+                      {activeDownloadMessage}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             </article>
           ) : null}
@@ -174,39 +257,76 @@ export default async function CollectionsPage({
             (() => {
               const downloadsLeft =
                 collectionDownloadsLeft.get(collection.number) ?? null;
+              const genreTips = parseGenreTips(collection.genres);
+              const visibleGenreTips = genreTips.slice(0, DEMO_VISIBLE_GENRE_LIMIT);
+              const hiddenGenreTips = genreTips.slice(DEMO_VISIBLE_GENRE_LIMIT);
 
               return (
                 <article
-                  className="collection-card"
+                  className="collection-card collection-card-demo-split"
                   id={`collection-${collection.number}`}
                   key={collection.number}
                   data-reveal
                 >
-                  <div className="collection-card-head">
-                    <span>#{collection.number}</span>
-                    <strong>{collection.date}</strong>
-                  </div>
+                  <div className="demo-card-copy">
+                    <div className="demo-card-top">
+                      <p>DJ Vault / Drop #{collection.number}</p>
+                      <div className="demo-card-top-meta">
+                        <span>{collection.tracks}</span>
+                        <span>{collection.size}</span>
+                        <span>{collection.date}</span>
+                      </div>
+                    </div>
 
-                  <h2>Выпуск #{collection.number}</h2>
+                    <h2>Подборка #{collection.number}</h2>
 
-                  <div className="collection-card-meta">
-                    <span>
-                      {collection.size} · {collection.tracks}
-                    </span>
-                    <span>{collection.genres}</span>
-                    {downloadsLeft !== null ? (
-                      <span>
-                        {formatDownloadsLeft(
-                          downloadsLeft,
-                          collection.downloadLimit,
-                        )}
-                      </span>
+                    <div
+                      className="demo-card-tip-strip"
+                      aria-label={`Жанры подборки ${collection.number}`}
+                    >
+                      {visibleGenreTips.map((tip) => (
+                        <span
+                          className="demo-card-tip"
+                          key={`${collection.number}-${tip.name}-${tip.count ?? "none"}`}
+                        >
+                          <span>{tip.name}</span>
+                          {tip.count ? <strong>{tip.count}</strong> : null}
+                        </span>
+                      ))}
+                      {hiddenGenreTips.length > 0 ? (
+                        <span
+                          className="demo-card-more"
+                          tabIndex={0}
+                          aria-label={`Еще ${hiddenGenreTips.length} скрытых стилей`}
+                        >
+                          +{hiddenGenreTips.length}
+                          <span className="demo-card-more-popover" role="tooltip">
+                            {hiddenGenreTips.map((tip) => (
+                              <span
+                                className="demo-card-more-item"
+                                key={`${collection.number}-${tip.name}-${tip.count ?? "none"}-hidden`}
+                              >
+                                <span>{tip.name}</span>
+                                {tip.count ? <strong>{tip.count}</strong> : null}
+                              </span>
+                            ))}
+                          </span>
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {collection.description ? (
+                      <p className="collection-card-description demo-card-description">
+                        {collection.description}
+                      </p>
                     ) : null}
-                  </div>
 
-                  {hasPaidPlan ? (
-                    <div className="collection-card-action">
-                      {downloadsLeft === 0 ? (
+                    <div className="collection-card-action demo-card-action">
+                      {!hasPaidPlan ? (
+                        <a className="button-outline" href="/pricing">
+                          <span className="button-label">Вступить в клуб</span>
+                        </a>
+                      ) : downloadsLeft === 0 ? (
                         <span
                           className="button-outline button-disabled"
                           aria-disabled="true"
@@ -231,14 +351,23 @@ export default async function CollectionsPage({
                         </span>
                       )}
 
-                      {params.collection === collection.number &&
-                      activeDownloadMessage ? (
+                      <DownloadHint
+                        limit={collection.downloadLimit}
+                        remaining={downloadsLeft}
+                      />
+
+                      {!hasPaidPlan ? (
+                        <p className="collection-download-message">
+                          Доступно участникам клуба DJ Vault.
+                        </p>
+                      ) : params.collection === collection.number &&
+                        activeDownloadMessage ? (
                         <p className="collection-download-message">
                           {activeDownloadMessage}
                         </p>
                       ) : null}
                     </div>
-                  ) : null}
+                  </div>
                 </article>
               );
             })()

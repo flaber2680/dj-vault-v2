@@ -790,13 +790,12 @@ body.is-scrolled .header {
 }
 
 .plan-badge {
-  position: absolute;
-  top: 32px;
-  right: 32px;
   width: max-content;
-  max-width: calc(100% - 64px);
+  max-width: 100%;
+  margin-bottom: 28px;
   padding: 5px 8px;
   display: inline-flex;
+  align-self: flex-end;
   border: 1px solid rgba(255, 255, 255, .35);
   color: rgba(255, 255, 255, .72);
   font-size: 10px;
@@ -806,7 +805,7 @@ body.is-scrolled .header {
 }
 
 .plan-head {
-  padding-right: 150px;
+  padding-right: 0;
   margin-bottom: 36px;
 }
 
@@ -1079,12 +1078,158 @@ body.is-scrolled .header {
   line-height: 1.55;
 }
 
+.collection-card-demo-split {
+  min-height: 0;
+  display: block;
+}
+
+.demo-card-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.demo-card-top {
+  width: 100%;
+  margin-bottom: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.demo-card-top p {
+  margin: 0;
+  color: rgba(255, 255, 255, .64);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.demo-card-top-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px 12px;
+}
+
+.demo-card-top-meta span {
+  color: rgba(255, 255, 255, .62);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.demo-card-tip,
+.demo-card-more {
+  min-height: 34px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 50px;
+  color: rgba(255, 255, 255, .84);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.demo-card-more {
+  position: relative;
+  cursor: default;
+  color: #fff;
+  outline: none;
+}
+
+.demo-card-more:focus-visible {
+  border-color: rgba(255, 255, 255, .46);
+}
+
+.demo-card-tip-strip {
+  position: relative;
+  width: 100%;
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.demo-card-tip strong {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.demo-card-more-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 5;
+  width: max-content;
+  min-width: 210px;
+  max-width: min(320px, calc(100vw - 48px));
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(5, 5, 5, .96);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity .16s ease, transform .16s ease;
+}
+
+.demo-card-more:hover .demo-card-more-popover,
+.demo-card-more:focus .demo-card-more-popover,
+.demo-card-more:focus-within .demo-card-more-popover {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.demo-card-more-item {
+  min-height: 28px;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  color: rgba(255, 255, 255, .72);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.demo-card-more-item + .demo-card-more-item {
+  border-top: 1px solid rgba(255, 255, 255, .1);
+}
+
+.demo-card-more-item strong {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.demo-card-description {
+  max-width: 620px;
+  margin: 24px 0 0;
+}
+
 .collection-card-action {
   margin-top: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+}
+
+.collection-card-action.demo-card-action {
+  margin-top: 32px;
 }
 
 .collection-download-message {
@@ -1094,6 +1239,57 @@ body.is-scrolled .header {
   font-size: 12px;
   line-height: 1.4;
   text-transform: uppercase;
+}
+
+.collection-download-hint {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, .58);
+  cursor: default;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  outline: none;
+  text-transform: uppercase;
+}
+
+.collection-download-hint:focus-visible {
+  border-color: rgba(255, 255, 255, .48);
+  color: #fff;
+}
+
+.collection-download-tooltip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  z-index: 6;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 48px));
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(5, 5, 5, .96);
+  color: rgba(255, 255, 255, .72);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  text-transform: uppercase;
+  transform: translateY(4px);
+  transition: opacity .16s ease, transform .16s ease;
+}
+
+.collection-download-hint:hover .collection-download-tooltip,
+.collection-download-hint:focus .collection-download-tooltip,
+.collection-download-hint:focus-within .collection-download-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* CHECKOUT */
@@ -1498,6 +1694,13 @@ body.is-scrolled .header {
   border: 1px solid rgba(255, 255, 255, .24);
   background: rgba(0, 0, 0, .72);
   box-shadow: none;
+}
+
+.reveal-ready .auth-card,
+.reveal-ready .account-card {
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 .account-card {
@@ -2202,6 +2405,22 @@ body.is-scrolled .header {
     flex-direction: column;
   }
 
+  .demo-card-top {
+    margin-bottom: 26px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .demo-card-top-meta {
+    justify-content: flex-start;
+  }
+
+  .demo-card-tip-strip {
+    margin-inline: -2px;
+    padding-bottom: 4px;
+  }
+
   .archive-row {
     grid-template-columns: 1fr;
     gap: 12px;
@@ -2240,6 +2459,29 @@ body.is-scrolled .header {
 @media (hover: none), (pointer: coarse), (max-width: 768px) {
   .cursor-trail {
     display: none;
+  }
+
+  .collection-download-hint {
+    width: 100%;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    justify-content: flex-start;
+    color: transparent;
+    font-size: 0;
+  }
+
+  .collection-download-tooltip {
+    position: static;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, .46);
+    font-size: 11px;
+    opacity: 1;
+    transform: none;
   }
 
   .reveal-ready [data-reveal],

@@ -25,7 +25,14 @@ declare module "@auth/core/jwt" {
   }
 }
 
+const authSecret =
+  process.env.AUTH_SECRET ??
+  (process.env.NODE_ENV === "production"
+    ? undefined
+    : "dj-vault-local-nextauth-secret-change-me");
+
 export const { handlers, auth, signOut } = NextAuth({
+  secret: authSecret,
   trustHost: true,
   session: {
     strategy: "jwt",

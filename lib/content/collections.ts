@@ -45,12 +45,12 @@ export const latestGenres = [
 
 export const demoCollection: CollectionItem = {
   number: DEMO_COLLECTION_NUMBER,
-  date: "Демо доступ",
-  size: "Lite",
-  genres: "Afro House / Deep House / Tech House",
+  date: "08.07.26",
+  size: "376.81 MB",
+  genres: "Afro 9 · Afro (Rus) 6 · Breakbeat 4 · House 6 · Indie Dance 6 · Pop (Eng) 2 · Pop (Rus) 8",
   description:
-    "Короткий демо-выпуск, чтобы оценить качество отбора и формат подборки.",
-  tracks: "Демо выпуск",
+    "Короткий фрагмент закрытой библиотеки DJ Vault: отобранные треки без случайного мусора, подготовленные для DJ-сета.",
+  tracks: "41 трек",
   s3Key: "",
   isActive: true,
   downloadLimit: 2,
