@@ -6,6 +6,7 @@ import { isAdminUser } from "@/lib/auth/admin";
 import { getCurrentUser } from "@/lib/auth/session";
 import { resetDownloadLimit } from "@/lib/downloads/store";
 import { saveCollection } from "@/lib/content/collections";
+import { createPromoCodeForUser } from "@/lib/referrals/store";
 
 function getField(formData: FormData, name: string) {
   const value = formData.get(name);
@@ -80,4 +81,39 @@ export async function resetDownloadLimitAction(formData: FormData) {
   await resetDownloadLimit(userId, archiveId);
   revalidatePath("/admin");
   redirect(`/admin?reset=${encodeURIComponent(archiveId)}`);
+}
+
+export async function createPromoCodeAction(formData: FormData) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  if (!isAdminUser(user)) {
+    redirect("/account");
+  }
+
+  const userId = getField(formData, "userId");
+  const code = getField(formData, "code");
+
+  if (!userId.trim() || !code.trim()) {
+    redirect("/admin?promo_error=required#users");
+  }
+
+  try {
+    const promoCode = await createPromoCodeForUser({
+      code,
+      ownerUserId: userId,
+    });
+
+    revalidatePath("/admin");
+    redirect(`/admin?promo=${encodeURIComponent(promoCode.code)}#promo-codes`);
+  } catch (error) {
+    if ((error as Error).message === "PROMO_CODE_EXISTS") {
+      redirect("/admin?promo_error=exists#users");
+    }
+
+    redirect("/admin?promo_error=unknown#users");
+  }
 }

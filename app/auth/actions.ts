@@ -12,6 +12,10 @@ import {
   resetPasswordByToken,
 } from "@/lib/auth/password-reset";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
+import {
+  findActivePromoCode,
+  recordPromoRegistration,
+} from "@/lib/referrals/store";
 
 function formValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -37,17 +41,41 @@ export async function registerWithEmail(formData: FormData) {
   const name = formValue(formData, "name");
   const email = formValue(formData, "email");
   const password = formValue(formData, "password");
+  const promoCode = formValue(formData, "promoCode");
 
   if (!email.includes("@") || password.length < 6) {
     redirectWithError("/register", "invalid_register");
   }
 
+  if (promoCode) {
+    const activePromoCode = await findActivePromoCode(promoCode);
+
+    if (!activePromoCode) {
+      redirectWithError("/register", "invalid_promo");
+    }
+  }
+
   try {
     const user = await createUserWithEmail({ email, password, name });
+
+    if (promoCode) {
+      await recordPromoRegistration({
+        promoCode,
+        referredUserId: user.id,
+      });
+    }
+
     await setSessionCookie(user.id);
   } catch (error) {
     if ((error as Error).message === "USER_EXISTS") {
       redirectWithError("/register", "user_exists");
+    }
+
+    if (
+      (error as Error).message === "PROMO_CODE_NOT_FOUND" ||
+      (error as Error).message === "PROMO_CODE_SELF_REFERRAL"
+    ) {
+      redirectWithError("/register", "invalid_promo");
     }
 
     redirectWithError("/register", "unknown");

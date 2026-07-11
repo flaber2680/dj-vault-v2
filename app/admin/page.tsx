@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import {
+  createPromoCodeAction,
   resetDownloadLimitAction,
   saveCollectionAction,
 } from "@/app/admin/actions";
@@ -9,14 +10,19 @@ import { isAdminUser } from "@/lib/auth/admin";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getUsers } from "@/lib/auth/store";
 import { getDownloadRecords } from "@/lib/downloads/store";
+import { getDownloadUsageSummary } from "@/lib/downloads/usage";
 import {
   getCollections,
   getDemoCollection,
 } from "@/lib/content/collections";
+import { getPromoCodeDashboard } from "@/lib/referrals/store";
 
 type AdminPageProps = {
   searchParams?: Promise<{
     error?: string;
+    promo?: string;
+    promo_error?: string;
+    q?: string;
     reset?: string;
     saved?: string;
   }>;
@@ -50,6 +56,22 @@ function formatAdminDate(value?: string) {
   }).format(new Date(value));
 }
 
+function matchesUserSearch(
+  user: Awaited<ReturnType<typeof getUsers>>[number],
+  query: string,
+) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  return [user.name, user.email, user.plan, user.planExpiresAt ?? ""]
+    .join(" ")
+    .toLowerCase()
+    .includes(normalizedQuery);
+}
+
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const user = await getCurrentUser();
 
@@ -66,6 +88,28 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const demoCollection = await getDemoCollection();
   const downloadRecords = await getDownloadRecords();
   const users = await getUsers();
+  const promoDashboard = await getPromoCodeDashboard(users);
+  const userQuery = params.q?.trim() ?? "";
+  const promoCodesByOwner = promoDashboard.reduce(
+    (map, item) => {
+      const codes = map.get(item.code.ownerUserId) ?? [];
+
+      codes.push(item.code.code);
+      map.set(item.code.ownerUserId, codes);
+
+      return map;
+    },
+    new Map<string, string[]>(),
+  );
+  const normalizedUserQuery = userQuery.toLowerCase();
+  const filteredUsers = users.filter((item) => {
+    const ownerCodes = promoCodesByOwner.get(item.id) ?? [];
+
+    return (
+      matchesUserSearch(item, userQuery) ||
+      ownerCodes.some((code) => code.toLowerCase().includes(normalizedUserQuery))
+    );
+  });
   const nextNumber = getNextCollectionNumber(collections);
   const items = [demoCollection, ...collections];
 
@@ -106,11 +150,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               Лимит скачивания для архива #{params.reset} сброшен.
             </div>
           ) : null}
+
+          {params.promo ? (
+            <div className="admin-message">
+              Промокод {params.promo} выдан пользователю.
+            </div>
+          ) : null}
+
+          {params.promo_error ? (
+            <div className="admin-message admin-message-error">
+              {params.promo_error === "exists"
+                ? "Такой промокод уже существует."
+                : "Укажите пользователя и уникальный промокод."}
+            </div>
+          ) : null}
         </div>
 
         <nav className="admin-nav" aria-label="Разделы админ-панели" data-reveal>
           <a href="#collections">Подборки <span>{items.length}</span></a>
           <a href="#users">Пользователи <span>{users.length}</span></a>
+          <a href="#promo-codes">Промокоды <span>{promoDashboard.length}</span></a>
           <a href="#downloads">Скачивания <span>{downloadRecords.length}</span></a>
         </nav>
 
@@ -252,13 +311,34 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <p>Тариф, срок доступа и использованные скачивания видны в одной строке.</p>
           </div>
 
+          <form className="admin-search" action="/admin" data-reveal>
+            <label className="admin-field">
+              <span>Поиск пользователей</span>
+              <input
+                name="q"
+                placeholder="Имя, email, тариф или промокод"
+                defaultValue={userQuery}
+              />
+            </label>
+            <button className="button-outline" type="submit">
+              <span className="button-label">Найти</span>
+            </button>
+            {userQuery ? (
+              <a className="admin-search-reset" href="/admin#users">
+                Сбросить
+              </a>
+            ) : null}
+          </form>
+
           <div className="admin-users" data-reveal>
             <div className="admin-users-head">
-              <span>Пользователь</span><span>Тариф</span><span>Регистрация</span><span>Скачивания</span>
+              <span>Пользователь</span><span>Тариф</span><span>Регистрация</span><span>Скачивания</span><span>Промокод</span>
             </div>
-            {users.length === 0 ? <p className="admin-empty">Пользователей пока нет.</p> : null}
-            {users.map((item) => {
+            {filteredUsers.length === 0 ? <p className="admin-empty">Пользователи не найдены.</p> : null}
+            {filteredUsers.map((item) => {
               const records = downloadRecords.filter((record) => record.userId === item.id);
+              const ownerCodes = promoCodesByOwner.get(item.id) ?? [];
+
               return (
                 <article className="admin-user-row" key={item.id}>
                   <div className="admin-user-identity"><strong>{item.name}</strong><span>{item.email}</span></div>
@@ -266,13 +346,49 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   <time>{formatAdminDate(item.createdAt)}</time>
                   <div className="admin-user-downloads">
                     {records.length === 0 ? <span className="admin-muted">Нет скачиваний</span> : records.map((record) => (
-                      <form action={resetDownloadLimitAction} className="admin-download-record" key={record.archiveId}>
-                        <input name="userId" type="hidden" value={item.id} />
-                        <input name="archiveId" type="hidden" value={record.archiveId} />
-                        <span>#{record.archiveId} · {record.downloadCount}</span>
-                        <button type="submit">Сбросить</button>
-                      </form>
+                      (() => {
+                        const collection = items.find(
+                          (collectionItem) => collectionItem.number === record.archiveId,
+                        );
+                        const usage = getDownloadUsageSummary(
+                          record,
+                          collection?.downloadLimit ?? record.downloadCount,
+                        );
+
+                        return (
+                          <form action={resetDownloadLimitAction} className="admin-download-record" key={record.archiveId}>
+                            <input name="userId" type="hidden" value={item.id} />
+                            <input name="archiveId" type="hidden" value={record.archiveId} />
+                            <span className="admin-download-archive">#{record.archiveId}</span>
+                            <span className="admin-download-usage">
+                              <strong>{usage.label}</strong>
+                              <small>использовано / лимит / осталось</small>
+                            </span>
+                            <button type="submit">Сбросить</button>
+                          </form>
+                        );
+                      })()
                     ))}
+                  </div>
+                  <div className="admin-user-promo">
+                    {ownerCodes.length > 0 ? (
+                      <div className="admin-user-promo-list">
+                        {ownerCodes.map((code) => (
+                          <span key={code}>{code}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="admin-muted">Кодов нет</span>
+                    )}
+                    <form action={createPromoCodeAction} className="admin-promo-form">
+                      <input name="userId" type="hidden" value={item.id} />
+                      <input
+                        name="code"
+                        placeholder="PROMO"
+                        aria-label={`Промокод для ${item.email}`}
+                      />
+                      <button type="submit">Выдать</button>
+                    </form>
                   </div>
                 </article>
               );
@@ -280,9 +396,64 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           </div>
         </section>
 
+        <section className="admin-section" id="promo-codes">
+          <div className="admin-section-head" data-reveal>
+            <div><span>03 / Партнеры</span><h2>Промокоды</h2></div>
+            <p>Регистрация по коду видна сразу, но в зачёт идут только пользователи, которые купили платный тариф.</p>
+          </div>
+
+          <div className="admin-promo-list" data-reveal>
+            {promoDashboard.length === 0 ? (
+              <p className="admin-empty">Промокоды пока не выданы.</p>
+            ) : null}
+
+            {promoDashboard.map((item) => (
+              <article className="admin-promo-card" key={item.code.id}>
+                <div className="admin-promo-card-head">
+                  <div>
+                    <span>Промокод</span>
+                    <strong>{item.code.code}</strong>
+                  </div>
+                  <div>
+                    <span>Владелец</span>
+                    <strong>{item.owner?.email ?? item.code.ownerUserId}</strong>
+                  </div>
+                  <div>
+                    <span>Регистрации</span>
+                    <strong>{item.registeredCount}</strong>
+                  </div>
+                  <div>
+                    <span>Оплаченные</span>
+                    <strong>{item.paidCount}</strong>
+                  </div>
+                </div>
+
+                <div className="admin-promo-referrals">
+                  {item.referrals.length === 0 ? (
+                    <p className="admin-muted">По этому коду пока никто не зарегистрировался.</p>
+                  ) : null}
+
+                  {item.referrals.map((referral) => (
+                    <div className="admin-promo-referral" key={referral.id}>
+                      <span>{referral.user?.email ?? referral.referredUserId}</span>
+                      <span>{referral.user?.plan ?? "free"}</span>
+                      <span>{formatAdminDate(referral.registeredAt)}</span>
+                      <strong>
+                        {referral.convertedAt && referral.convertedPlan
+                          ? `${referral.convertedPlan} · ${formatAdminDate(referral.convertedAt)}`
+                          : "не купил"}
+                      </strong>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section className="admin-section" id="downloads">
           <div className="admin-section-head" data-reveal>
-            <div><span>03 / Журнал</span><h2>Скачивания</h2></div>
+            <div><span>04 / Журнал</span><h2>Скачивания</h2></div>
             <p>Последняя активность по каждому пользователю и архиву.</p>
           </div>
           <div className="admin-download-log" data-reveal>

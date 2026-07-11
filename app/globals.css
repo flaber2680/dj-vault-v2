@@ -2203,7 +2203,7 @@ body.is-scrolled .header {
 .admin-users-head,
 .admin-user-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.25fr) minmax(120px, .55fr) minmax(130px, .55fr) minmax(240px, 1fr);
+  grid-template-columns: minmax(190px, 1.15fr) minmax(110px, .45fr) minmax(120px, .45fr) minmax(220px, .9fr) minmax(220px, .9fr);
   gap: 24px;
   align-items: center;
 }
@@ -2247,6 +2247,99 @@ body.is-scrolled .header {
 
 .admin-user-downloads { display: grid; gap: 7px; }
 
+.admin-search {
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: minmax(220px, 420px) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.admin-search .admin-field {
+  margin: 0;
+}
+
+.admin-search .button-outline {
+  min-height: 44px;
+  justify-content: center;
+}
+
+.admin-search-reset {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, .5);
+  font-size: 10px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.admin-search-reset:hover,
+.admin-search-reset:focus-visible {
+  color: #fff;
+  outline: none;
+}
+
+.admin-user-promo {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-user-promo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-user-promo-list span {
+  padding: 5px 8px;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .24);
+  border-radius: 50px;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.admin-promo-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.admin-promo-form input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, .04);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 0;
+  font: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.admin-promo-form button {
+  padding: 5px 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, .5);
+  border: 1px solid rgba(255, 255, 255, .2);
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.admin-promo-form button:hover,
+.admin-promo-form button:focus-visible {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+  outline: none;
+}
+
 .admin-download-record {
   min-height: 30px;
   display: flex;
@@ -2255,7 +2348,34 @@ body.is-scrolled .header {
   gap: 10px;
 }
 
-.admin-download-record span { color: rgba(255, 255, 255, .7); font-size: 10px; text-transform: uppercase; }
+.admin-download-record span {
+  color: rgba(255, 255, 255, .7);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.admin-download-archive { flex: 0 0 auto; }
+
+.admin-download-usage {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  gap: 3px;
+}
+
+.admin-download-usage strong {
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.admin-download-usage small {
+  color: rgba(255, 255, 255, .38);
+  font-size: 8px;
+  line-height: 1.2;
+}
+
 .admin-download-record button {
   padding: 5px 7px;
   background: transparent;
@@ -2269,6 +2389,73 @@ body.is-scrolled .header {
 
 .admin-download-record button:hover,
 .admin-download-record button:focus-visible { background: #fff; color: #000; border-color: #fff; outline: none; }
+
+.admin-promo-list {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-promo-card {
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(255, 255, 255, .02);
+}
+
+.admin-promo-card-head {
+  display: grid;
+  grid-template-columns: minmax(130px, .7fr) minmax(220px, 1.2fr) repeat(2, minmax(90px, .45fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.admin-promo-card-head div {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.admin-promo-card-head span {
+  color: rgba(255, 255, 255, .38);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.admin-promo-card-head strong {
+  overflow-wrap: anywhere;
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.admin-promo-referrals {
+  margin-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, .14);
+}
+
+.admin-promo-referral {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 90px 120px minmax(150px, .7fr);
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, .1);
+  color: rgba(255, 255, 255, .58);
+  font-size: 10px;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.admin-promo-referral span,
+.admin-promo-referral strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-promo-referral strong {
+  color: #fff;
+  font-weight: 600;
+}
 
 .admin-download-log article {
   min-height: 64px;
@@ -2642,6 +2829,15 @@ body.is-scrolled .header {
     gap: 20px;
   }
 
+  .admin-section-head > div {
+    min-width: 0;
+  }
+
+  .admin-section-head h2 {
+    font-size: clamp(34px, 10vw, 42px);
+    overflow-wrap: anywhere;
+  }
+
   .admin-users-head { display: none; }
 
   .admin-user-row {
@@ -2649,10 +2845,35 @@ body.is-scrolled .header {
     gap: 20px;
   }
 
+  .admin-search {
+    grid-template-columns: 1fr;
+  }
+
   .admin-user-downloads {
     grid-column: 1 / -1;
     padding-top: 12px;
     border-top: 1px solid rgba(255, 255, 255, .12);
+  }
+
+  .admin-user-promo {
+    grid-column: 1 / -1;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, .12);
+  }
+
+  .admin-promo-card {
+    padding: 18px;
+  }
+
+  .admin-promo-card-head {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .admin-promo-referral {
+    padding-block: 14px;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 14px;
   }
 
   .admin-download-log article {

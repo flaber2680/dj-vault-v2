@@ -76,6 +76,18 @@ export function AuthCard({
             />
           </label>
 
+          {isRegister ? (
+            <label className="auth-field">
+              <span>Промокод</span>
+              <input
+                className="auth-input"
+                name="promoCode"
+                autoComplete="off"
+                placeholder="Если есть"
+              />
+            </label>
+          ) : null}
+
           {!isRegister ? (
             <Link className="auth-forgot" href="/forgot-password">
               Забыли пароль?

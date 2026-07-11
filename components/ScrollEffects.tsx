@@ -5,6 +5,8 @@ import { useEffect } from "react";
 export function ScrollEffects() {
   useEffect(() => {
     const body = document.body;
+    const revealPendingClass = "reveal-pending";
+    const revealVisibleClass = "is-visible";
     const items = Array.from(
       document.querySelectorAll<HTMLElement>("[data-reveal]"),
     );
@@ -25,11 +27,17 @@ export function ScrollEffects() {
     window.addEventListener("scroll", updateHeader, { passive: true });
 
     if (prefersReducedMotion || isTouchDevice) {
-      items.forEach((item) => item.classList.add("is-visible"));
+      items.forEach((item) => {
+        item.classList.remove(revealPendingClass);
+        item.classList.add(revealVisibleClass);
+      });
 
       return () => {
         window.removeEventListener("scroll", updateHeader);
         body.classList.remove("is-scrolled", "reveal-ready");
+        items.forEach((item) => {
+          item.classList.remove(revealPendingClass, revealVisibleClass);
+        });
       };
     }
 
@@ -40,8 +48,10 @@ export function ScrollEffects() {
             return;
           }
 
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
+          const target = entry.target as HTMLElement;
+          target.classList.remove(revealPendingClass);
+          target.classList.add(revealVisibleClass);
+          observer.unobserve(target);
         });
       },
       {
@@ -55,6 +65,7 @@ export function ScrollEffects() {
         item.style.setProperty("--reveal-delay", `${(index % 6) * 70}ms`);
       }
 
+      item.classList.add(revealPendingClass);
       observer.observe(item);
     });
 
@@ -62,6 +73,9 @@ export function ScrollEffects() {
       observer.disconnect();
       window.removeEventListener("scroll", updateHeader);
       body.classList.remove("is-scrolled", "reveal-ready");
+      items.forEach((item) => {
+        item.classList.remove(revealPendingClass, revealVisibleClass);
+      });
     };
   }, []);
 

@@ -7,6 +7,7 @@ import {
   type StoredPayment,
 } from "@/lib/payments/store";
 import type { YooKassaPayment } from "@/lib/payments/yookassa";
+import { recordPaidReferralConversion } from "@/lib/referrals/store";
 
 const dayInMs = 24 * 60 * 60 * 1000;
 
@@ -115,6 +116,12 @@ export async function activateYooKassaPayment(
     providerStatus: payment.status,
     status: "succeeded",
     paidAt: new Date().toISOString(),
+  });
+
+  await recordPaidReferralConversion({
+    paymentId: updatedPayment.id,
+    plan: localPayment.activationPlanId,
+    userId: user.id,
   });
 
   return { payment: updatedPayment, activated: true, status: payment.status };
