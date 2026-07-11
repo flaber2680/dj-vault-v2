@@ -104,6 +104,14 @@ export async function findUserById(id: string) {
   return user ? getPublicUser(user) : null;
 }
 
+export async function getUsers() {
+  const users = await readUsers();
+
+  return users
+    .map(getPublicUser)
+    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
+
 export async function findUserByEmail(email: string) {
   const users = await readUsers();
   const normalizedEmail = normalizeEmail(email);

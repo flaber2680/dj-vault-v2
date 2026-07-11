@@ -68,7 +68,7 @@ a {
   will-change: transform, opacity;
 }
 
-.reveal-ready [data-reveal] {
+.reveal-ready [data-reveal].reveal-pending {
   opacity: 0;
   transform: translateY(24px);
   filter: blur(6px);
@@ -2111,6 +2111,176 @@ body.is-scrolled .header {
   text-transform: uppercase;
 }
 
+.admin-nav {
+  margin-top: 54px;
+  display: flex;
+  border-block: 1px solid rgba(255, 255, 255, .18);
+}
+
+.admin-nav a {
+  min-height: 58px;
+  padding: 0 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, .62);
+  border-right: 1px solid rgba(255, 255, 255, .18);
+  font-size: 11px;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background-color .18s ease, color .18s ease;
+}
+
+.admin-nav a:hover { background: #fff; color: #000; }
+.admin-nav span { color: inherit; opacity: .52; }
+
+.admin-section {
+  padding-top: clamp(76px, 8vw, 126px);
+  scroll-margin-top: 60px;
+}
+
+.admin-section + .admin-section {
+  margin-top: clamp(76px, 8vw, 126px);
+  border-top: 1px solid rgba(255, 255, 255, .18);
+}
+
+.admin-section-head {
+  margin-bottom: 42px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, .45fr);
+  gap: 48px;
+  align-items: end;
+}
+
+.admin-section-head > div > span {
+  display: block;
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, .42);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.admin-section-head h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(42px, 5vw, 78px);
+  font-weight: 900;
+  line-height: .9;
+  text-transform: uppercase;
+}
+
+.admin-section-head p {
+  margin: 0;
+  color: rgba(255, 255, 255, .56);
+  font-size: 12px;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.admin-collections-grid { margin-top: 0; }
+.admin-row { position: relative; }
+.admin-row .admin-row-topline { margin-bottom: 18px; }
+
+.admin-status {
+  position: absolute;
+  right: 0;
+  bottom: 18px;
+  color: rgba(255, 255, 255, .38);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.admin-status-active { color: rgba(255, 255, 255, .78); }
+
+.admin-users,
+.admin-download-log { border-top: 1px solid rgba(255, 255, 255, .28); }
+
+.admin-users-head,
+.admin-user-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.25fr) minmax(120px, .55fr) minmax(130px, .55fr) minmax(240px, 1fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.admin-users-head {
+  min-height: 48px;
+  color: rgba(255, 255, 255, .38);
+  border-bottom: 1px solid rgba(255, 255, 255, .16);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.admin-user-row {
+  min-height: 104px;
+  padding-block: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .16);
+}
+
+.admin-user-identity,
+.admin-user-plan { min-width: 0; display: grid; gap: 7px; }
+
+.admin-user-identity strong,
+.admin-user-plan strong {
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.admin-user-identity span,
+.admin-user-plan span,
+.admin-user-row time,
+.admin-muted {
+  overflow: hidden;
+  color: rgba(255, 255, 255, .48);
+  font-size: 10px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.admin-user-downloads { display: grid; gap: 7px; }
+
+.admin-download-record {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-download-record span { color: rgba(255, 255, 255, .7); font-size: 10px; text-transform: uppercase; }
+.admin-download-record button {
+  padding: 5px 7px;
+  background: transparent;
+  color: rgba(255, 255, 255, .5);
+  border: 1px solid rgba(255, 255, 255, .2);
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.admin-download-record button:hover,
+.admin-download-record button:focus-visible { background: #fff; color: #000; border-color: #fff; outline: none; }
+
+.admin-download-log article {
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 80px minmax(220px, 1fr) 160px 150px;
+  gap: 20px;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, .16);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.admin-download-log article span,
+.admin-download-log article time { color: rgba(255, 255, 255, .48); }
+.admin-download-log article strong { overflow: hidden; color: #fff; font-weight: 500; text-overflow: ellipsis; }
+.admin-empty { margin: 0; padding: 30px 0; color: rgba(255, 255, 255, .48); font-size: 11px; text-transform: uppercase; }
+
 /* PAIN SECTION */
 
 .pain-section {
@@ -2431,6 +2601,19 @@ body.is-scrolled .header {
     padding-right: 0;
   }
 
+  .pricing-card {
+    padding-top: clamp(76px, 17vw, 88px);
+  }
+
+  .pricing-card .plan-badge {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    max-width: calc(100% - 48px);
+    margin-bottom: 0;
+    align-self: flex-start;
+  }
+
   .pain-process-item {
     min-height: 0;
     padding: 24px 0 30px;
@@ -2444,6 +2627,33 @@ body.is-scrolled .header {
 
   .admin-field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-nav { overflow-x: auto; }
+  .admin-nav a { flex: 0 0 auto; }
+
+  .admin-section-head {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .admin-users-head { display: none; }
+
+  .admin-user-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .admin-user-downloads {
+    grid-column: 1 / -1;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, .12);
+  }
+
+  .admin-download-log article {
+    padding-block: 18px;
+    grid-template-columns: 64px 1fr;
+    gap: 10px 16px;
   }
 
   .footer {
@@ -2484,6 +2694,7 @@ body.is-scrolled .header {
     transform: none;
   }
 
+  .reveal-ready [data-reveal].reveal-pending,
   .reveal-ready [data-reveal],
   .reveal-ready [data-reveal].is-visible {
     opacity: 1;
@@ -2498,7 +2709,9 @@ body.is-scrolled .header {
     display: none;
   }
 
+  .reveal-ready [data-reveal].reveal-pending,
   .reveal-ready [data-reveal] {
+    opacity: 1;
     transition: none;
     transform: none;
     filter: none;
