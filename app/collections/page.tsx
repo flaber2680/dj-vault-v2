@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/Header";
 import { ScrollEffects } from "@/components/ScrollEffects";
+import { CollectionDownloadAction } from "@/components/collections/CollectionDownloadAction";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   getCollections,
@@ -42,39 +43,6 @@ function parseGenreTips(genres: string) {
         count: match[2],
       };
     });
-}
-
-function formatDownloadsLeft(remaining: number, limit: number) {
-  if (remaining <= 0) {
-    return "Лимит скачивания исчерпан";
-  }
-
-  return `Осталось ${remaining} из ${limit} скачиваний`;
-}
-
-function DownloadHint({
-  limit,
-  remaining,
-}: {
-  limit: number;
-  remaining: number | null;
-}) {
-  if (remaining === null || remaining <= 0) {
-    return null;
-  }
-
-  return (
-    <span
-      className="collection-download-hint"
-      tabIndex={0}
-      aria-label={formatDownloadsLeft(remaining, limit)}
-    >
-      i
-      <span className="collection-download-tooltip" role="tooltip">
-        {formatDownloadsLeft(remaining, limit)}
-      </span>
-    </span>
-  );
 }
 
 export default async function CollectionsPage({
@@ -203,20 +171,13 @@ export default async function CollectionsPage({
                 ) : null}
 
                 <div className="collection-card-action demo-card-action">
-                  {demoDownloadsLeft === 0 ? (
-                    <span
-                      className="button-outline button-disabled"
-                      aria-disabled="true"
-                    >
-                      <span className="button-label">Лимит исчерпан</span>
-                    </span>
-                  ) : demoCollection.s3Key ? (
-                    <a
-                      className="button-outline"
-                      href={`/api/download/${demoCollection.number}`}
-                    >
-                      <span className="button-label">Скачать демо</span>
-                    </a>
+                  {demoCollection.s3Key && demoDownloadsLeft !== null ? (
+                    <CollectionDownloadAction
+                      collectionNumber={demoCollection.number}
+                      initialRemaining={demoDownloadsLeft}
+                      label="Скачать демо"
+                      limit={demoCollection.downloadLimit}
+                    />
                   ) : (
                     <span
                       className="button-outline button-disabled"
@@ -225,11 +186,6 @@ export default async function CollectionsPage({
                       <span className="button-label">Демо скоро появится</span>
                     </span>
                   )}
-
-                  <DownloadHint
-                    limit={demoCollection.downloadLimit}
-                    remaining={demoDownloadsLeft}
-                  />
 
                   {params.collection === demoCollection.number &&
                   activeDownloadMessage ? (
@@ -326,20 +282,13 @@ export default async function CollectionsPage({
                         <a className="button-outline" href="/pricing">
                           <span className="button-label">Вступить в клуб</span>
                         </a>
-                      ) : downloadsLeft === 0 ? (
-                        <span
-                          className="button-outline button-disabled"
-                          aria-disabled="true"
-                        >
-                          <span className="button-label">Лимит исчерпан</span>
-                        </span>
-                      ) : collection.s3Key ? (
-                        <a
-                          className="button-outline"
-                          href={`/api/download/${collection.number}`}
-                        >
-                          <span className="button-label">Скачать подборку</span>
-                        </a>
+                      ) : collection.s3Key && downloadsLeft !== null ? (
+                        <CollectionDownloadAction
+                          collectionNumber={collection.number}
+                          initialRemaining={downloadsLeft}
+                          label="Скачать подборку"
+                          limit={collection.downloadLimit}
+                        />
                       ) : (
                         <span
                           className="button-outline button-disabled"
@@ -350,11 +299,6 @@ export default async function CollectionsPage({
                           </span>
                         </span>
                       )}
-
-                      <DownloadHint
-                        limit={collection.downloadLimit}
-                        remaining={downloadsLeft}
-                      />
 
                       {!hasPaidPlan ? (
                         <p className="collection-download-message">

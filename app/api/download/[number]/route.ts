@@ -71,6 +71,7 @@ function serializeError(error: unknown) {
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
+  const wantsJson = request.nextUrl.searchParams.get("format") === "json";
   const { number } = await context.params;
   const collection = await findCollectionByNumber(number);
 
@@ -91,6 +92,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   if (!collection.s3Key) {
+    if (wantsJson) {
+      return NextResponse.json({ error: "not_configured" }, { status: 409 });
+    }
     return redirectToCollections(request, "not_configured", collection.number);
   }
 
@@ -106,6 +110,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       error: serializeError(error),
     });
 
+    if (wantsJson) {
+      return NextResponse.json({ error: "storage" }, { status: 500 });
+    }
     return redirectToCollections(request, "storage", collection.number);
   }
 
@@ -132,7 +139,23 @@ export async function GET(request: NextRequest, context: RouteContext) {
   });
 
   if (!download.allowed) {
+    if (wantsJson) {
+      return NextResponse.json(
+        { error: "limit", remaining: 0 },
+        { status: 429 },
+      );
+    }
     return redirectToCollections(request, "limit", collection.number);
+  }
+
+  if (wantsJson) {
+    return NextResponse.json({
+      downloadUrl: signedUrl,
+      remaining: Math.max(
+        0,
+        collection.downloadLimit - download.record.downloadCount,
+      ),
+    });
   }
 
   return NextResponse.redirect(signedUrl);
