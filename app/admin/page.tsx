@@ -16,6 +16,7 @@ import {
   getCollections,
   getDemoCollection,
 } from "@/lib/content/collections";
+import { formatTrackCount } from "@/lib/content/track-count";
 import {
   formatReferralPurchase,
   getPromoCodeDashboard,
@@ -331,7 +332,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <h2>Подборка #{collection.number}</h2>
 
                 <p>
-                  {collection.size} · {collection.tracks} · {collection.genres}
+                  {collection.size} · {formatTrackCount(collection.tracks)} · {collection.genres}
                 </p>
 
                 <em>

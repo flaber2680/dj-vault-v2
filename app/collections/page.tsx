@@ -8,6 +8,7 @@ import {
   getDemoCollection,
 } from "@/lib/content/collections";
 import { getRemainingDownloadCount } from "@/lib/downloads/store";
+import { formatTrackCount } from "@/lib/content/track-count";
 
 type CollectionsPageProps = {
   searchParams?: Promise<{
@@ -122,7 +123,7 @@ export default async function CollectionsPage({
                 <div className="demo-card-top">
                   <p>DJ Vault / Demo drop</p>
                   <div className="demo-card-top-meta">
-                    <span>{demoCollection.tracks}</span>
+                    <span>{formatTrackCount(demoCollection.tracks)}</span>
                     <span>{demoCollection.size}</span>
                     <span>{demoCollection.date}</span>
                   </div>
@@ -229,7 +230,7 @@ export default async function CollectionsPage({
                     <div className="demo-card-top">
                       <p>DJ Vault / Drop #{collection.number}</p>
                       <div className="demo-card-top-meta">
-                        <span>{collection.tracks}</span>
+                        <span>{formatTrackCount(collection.tracks)}</span>
                         <span>{collection.size}</span>
                         <span>{collection.date}</span>
                       </div>
