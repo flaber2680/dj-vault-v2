@@ -1,7 +1,9 @@
 import { randomUUID } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import type { PublicUser, TariffPlan } from "@/lib/auth/store";
+import type { PublicUser } from "@/lib/auth/store";
+import type { StoredAccessPlan } from "@/lib/access/subscription";
+import type { AccessPackageId } from "@/lib/content/plans";
 
 const dataDirectory = path.join(process.cwd(), ".data");
 const referralsFile = path.join(dataDirectory, "promo-codes.json");
@@ -23,7 +25,10 @@ export type PromoReferral = {
   referredUserId: string;
   registeredAt: string;
   convertedAt?: string;
-  convertedPlan?: Exclude<TariffPlan, "free">;
+  convertedPackageId?: AccessPackageId;
+  convertedDurationDays?: number;
+  convertedAmount?: number;
+  convertedPlan?: Exclude<StoredAccessPlan, "free">;
   paymentId?: string;
 };
 
@@ -67,8 +72,40 @@ export function normalizePromoCode(code: string) {
   return code.trim().toUpperCase().replace(/\s+/g, "");
 }
 
-export function isPaidPlan(plan?: TariffPlan | null): plan is Exclude<TariffPlan, "free"> {
-  return plan === "start" || plan === "pro" || plan === "premium";
+export function isPaidPlan(
+  plan?: StoredAccessPlan | null,
+): plan is Exclude<StoredAccessPlan, "free"> {
+  return plan === "club" || plan === "start" || plan === "pro" || plan === "premium";
+}
+
+export function formatReferralPurchase(
+  referral: Pick<
+    PromoReferral,
+    | "convertedPackageId"
+    | "convertedDurationDays"
+    | "convertedAmount"
+    | "convertedPlan"
+  >,
+) {
+  const legacyPurchases = {
+    start: { durationDays: 30, amount: 1000 },
+    pro: { durationDays: 90, amount: 2700 },
+    premium: { durationDays: 180, amount: 4800 },
+  } as const;
+  const legacyPurchase = referral.convertedPlan
+    ? legacyPurchases[
+        referral.convertedPlan as keyof typeof legacyPurchases
+      ]
+    : undefined;
+  const durationDays =
+    referral.convertedDurationDays ?? legacyPurchase?.durationDays;
+  const amount = referral.convertedAmount ?? legacyPurchase?.amount;
+
+  if (!durationDays || !amount) {
+    return "Оплачен";
+  }
+
+  return `${durationDays} дней · ${amount} ₽`;
 }
 
 export function summarizePromoCode(item: PromoCodeDashboardItem) {
@@ -196,11 +233,15 @@ export async function recordPromoRegistration({
 
 export async function recordPaidReferralConversion({
   paymentId,
-  plan,
+  packageId,
+  durationDays,
+  amount,
   userId,
 }: {
   paymentId: string;
-  plan: Exclude<TariffPlan, "free">;
+  packageId: AccessPackageId;
+  durationDays: number;
+  amount: number;
   userId: string;
 }) {
   const data = await readReferralData();
@@ -211,7 +252,9 @@ export async function recordPaidReferralConversion({
   }
 
   referral.convertedAt = new Date().toISOString();
-  referral.convertedPlan = plan;
+  referral.convertedPackageId = packageId;
+  referral.convertedDurationDays = durationDays;
+  referral.convertedAmount = amount;
   referral.paymentId = paymentId;
 
   await writeReferralData(data);

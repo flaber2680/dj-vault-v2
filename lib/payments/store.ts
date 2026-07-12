@@ -1,8 +1,11 @@
 import { randomUUID } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
-import type { TariffPlan } from "@/lib/auth/store";
-import type { PaidPlan } from "@/lib/content/plans";
+import type {
+  AccessPackageId,
+  LegacyPackageId,
+} from "@/lib/content/plans";
+import type { StoredAccessPlan } from "@/lib/access/subscription";
 
 const dataDirectory = path.join(process.cwd(), ".data");
 const paymentsFile = path.join(dataDirectory, "payments.json");
@@ -17,8 +20,10 @@ export type StoredPayment = {
   providerStatus?: string;
   confirmationUrl?: string;
   userId: string;
-  planId: PaidPlan;
-  activationPlanId: Exclude<TariffPlan, "free">;
+  packageId?: AccessPackageId;
+  durationDays?: number;
+  planId?: LegacyPackageId;
+  activationPlanId?: Exclude<StoredAccessPlan, "free">;
   method: PaymentMethod;
   amount: number;
   currency: "RUB";
@@ -31,8 +36,8 @@ export type StoredPayment = {
 
 type CreatePaymentInput = {
   userId: string;
-  planId: PaidPlan;
-  activationPlanId: Exclude<TariffPlan, "free">;
+  packageId: AccessPackageId;
+  durationDays: number;
   method: PaymentMethod;
   amount: number;
 };
@@ -66,8 +71,8 @@ export async function createStoredPayment(input: CreatePaymentInput) {
     id: randomUUID(),
     provider: "yookassa",
     userId: input.userId,
-    planId: input.planId,
-    activationPlanId: input.activationPlanId,
+    packageId: input.packageId,
+    durationDays: input.durationDays,
     method: input.method,
     amount: input.amount,
     currency: "RUB",

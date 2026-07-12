@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { registerWithEmail } from "@/app/auth/actions";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { getCurrentUser } from "@/lib/auth/session";
+import { hasClubAccess } from "@/lib/access/subscription";
 
 type RegisterPageProps = {
   searchParams?: Promise<{
@@ -23,7 +24,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   const user = await getCurrentUser();
 
   if (user) {
-    redirect(user.plan !== "free" ? "/collections" : "/account");
+    redirect(hasClubAccess(user) ? "/collections" : "/account");
   }
 
   const params = searchParams ? await searchParams : {};

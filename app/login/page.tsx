@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { loginWithEmail } from "@/app/auth/actions";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { getCurrentUser } from "@/lib/auth/session";
+import { hasClubAccess } from "@/lib/access/subscription";
 
 type LoginPageProps = {
   searchParams?: Promise<{
@@ -19,7 +20,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const user = await getCurrentUser();
 
   if (user) {
-    redirect(user.plan !== "free" ? "/collections" : "/account");
+    redirect(hasClubAccess(user) ? "/collections" : "/account");
   }
 
   const params = searchParams ? await searchParams : {};

@@ -2,6 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { ScrollEffects } from "@/components/ScrollEffects";
 import { CollectionDownloadAction } from "@/components/collections/CollectionDownloadAction";
 import { getCurrentUser } from "@/lib/auth/session";
+import { hasClubAccess } from "@/lib/access/subscription";
 import {
   getCollections,
   getDemoCollection,
@@ -52,7 +53,7 @@ export default async function CollectionsPage({
   const collections = await getCollections();
   const demoCollection = await getDemoCollection();
   const params = searchParams ? await searchParams : {};
-  const hasPaidPlan = user ? user.plan !== "free" : false;
+  const hasPaidPlan = user ? hasClubAccess(user) : false;
   const activeDownloadMessage =
     params.download && params.collection
       ? downloadMessages[params.download]

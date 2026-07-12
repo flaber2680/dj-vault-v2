@@ -1,66 +1,56 @@
-import type { TariffPlan } from "@/lib/auth/store";
+export type AccessPackageId = "days-30" | "days-90" | "days-180";
+export type LegacyPackageId = "start" | "pro" | "premium";
 
-export type PaidPlan = Exclude<TariffPlan, "free">;
-
-export type PaidPlanDetails = {
-  id: PaidPlan;
-  name: string;
-  period: string;
-  price: string;
-  amount: number;
+export type AccessPackage = {
+  id: AccessPackageId;
   durationDays: number;
+  amount: number;
+  price: string;
   oldPrice?: string;
   badge: string;
-  features: string[];
 };
 
-export const paidPlanList: PaidPlanDetails[] = [
+export const accessPackageList: AccessPackage[] = [
   {
-    id: "start",
-    name: "Start",
-    period: "1 месяц",
-    price: "1000 ₽",
-    amount: 1000,
+    id: "days-30",
     durationDays: 30,
-    badge: "Для знакомства",
-    features: [
-      "Доступ на 30 дней",
-      "Еженедельные обновления",
-      "Закрытые DJ-подборки",
-    ],
+    amount: 1000,
+    price: "1000 ₽",
+    badge: "На месяц",
   },
   {
-    id: "pro",
-    name: "Pro",
-    period: "3 месяца",
-    price: "2700 ₽",
-    amount: 2700,
+    id: "days-90",
     durationDays: 90,
+    amount: 2700,
+    price: "2700 ₽",
     oldPrice: "3000 ₽",
     badge: "Самый популярный",
-    features: [
-      "Доступ на 3 месяца",
-      "Еженедельные обновления",
-      "Клубные подборки DJ Vault",
-    ],
   },
   {
-    id: "premium",
-    name: "Premium",
-    period: "6 месяцев",
-    price: "4800 ₽",
-    amount: 4800,
+    id: "days-180",
     durationDays: 180,
+    amount: 4800,
+    price: "4800 ₽",
     oldPrice: "6000 ₽",
     badge: "Максимальная выгода",
-    features: [
-      "Доступ на 6 месяцев",
-      "Еженедельные обновления",
-      "Клубные выпуски и подборки",
-    ],
   },
 ];
 
-export function getPaidPlan(plan?: string | null) {
-  return paidPlanList.find((item) => item.id === plan) ?? null;
+const legacyPackageIds: Record<LegacyPackageId, AccessPackageId> = {
+  start: "days-30",
+  pro: "days-90",
+  premium: "days-180",
+};
+
+export function getAccessPackage(id?: string | null) {
+  if (!id) {
+    return null;
+  }
+
+  const normalizedId =
+    id in legacyPackageIds
+      ? legacyPackageIds[id as LegacyPackageId]
+      : id;
+
+  return accessPackageList.find((item) => item.id === normalizedId) ?? null;
 }

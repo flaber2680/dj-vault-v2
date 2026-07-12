@@ -4,11 +4,12 @@ import { ScrollEffects } from "@/components/ScrollEffects";
 import { Hero } from "@/components/sections/Hero";
 import { LibraryBlocks } from "@/components/sections/LibraryBlocks";
 import { getCurrentUser } from "@/lib/auth/session";
+import { hasClubAccess } from "@/lib/access/subscription";
 
 export default async function Home() {
   const user = await getCurrentUser();
 
-  if (user && user.plan !== "free") {
+  if (user && hasClubAccess(user)) {
     redirect("/collections");
   }
 

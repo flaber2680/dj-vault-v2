@@ -4,11 +4,13 @@ import { startCheckout } from "@/app/checkout/actions";
 import { Header } from "@/components/layout/Header";
 import { ScrollEffects } from "@/components/ScrollEffects";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getPaidPlan } from "@/lib/content/plans";
+import { hasClubAccess } from "@/lib/access/subscription";
+import { getAccessPackage } from "@/lib/content/plans";
 
 type CheckoutPageProps = {
   searchParams?: Promise<{
     error?: string;
+    package?: string;
     plan?: string;
   }>;
 };
@@ -23,10 +25,10 @@ const checkoutErrors: Record<string, string> = {
 
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
   const params = searchParams ? await searchParams : {};
-  const plan = getPaidPlan(params.plan);
+  const accessPackage = getAccessPackage(params.package ?? params.plan);
   const user = await getCurrentUser();
 
-  if (!plan) {
+  if (!accessPackage) {
     redirect("/pricing");
   }
 
@@ -34,9 +36,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
     redirect("/register");
   }
 
-  const isRenewal = user.plan !== "free";
-  const currentPlan = getPaidPlan(user.plan);
-  const shownPlan = isRenewal ? currentPlan : plan;
+  const isRenewal = hasClubAccess(user);
 
   return (
     <main className="page">
@@ -47,14 +47,14 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
         <div className="checkout-copy" data-reveal>
           <div className="section-kicker">
             <span>{isRenewal ? "Продление" : "Оплата"}</span>
-            <span>{shownPlan?.name ?? plan.name}</span>
+            <span>DJ Vault Club</span>
           </div>
 
           <h1>{isRenewal ? "Продление подписки" : "Оформление подписки"}</h1>
           <p>
             {isRenewal
-              ? `Ваша текущая подписка ${shownPlan?.name ?? plan.name} сохранится. После оплаты добавится ${plan.durationDays} дней к текущему сроку.`
-              : "Проверьте подписку и выберите способ оплаты. Доступ к закрытым DJ-подборкам откроется после подтверждения платежа."}
+              ? `После оплаты ${accessPackage.durationDays} дней добавятся к текущему сроку доступа.`
+              : `После оплаты откроется полный доступ к DJ Vault на ${accessPackage.durationDays} дней.`}
           </p>
 
           <div className="checkout-return">
@@ -63,17 +63,17 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
         </div>
 
         <form action={startCheckout} className="checkout-card" data-reveal>
-          <input name="plan" type="hidden" value={plan.id} />
+          <input name="packageId" type="hidden" value={accessPackage.id} />
 
           <div className="checkout-plan-head">
-            <span>{plan.badge}</span>
-            <h2>{shownPlan?.name ?? plan.name}</h2>
-            <p>{isRenewal ? `Добавится ${plan.durationDays} дней` : plan.period}</p>
+            <span>{accessPackage.badge}</span>
+            <h2>{accessPackage.durationDays} дней</h2>
+            <p>{isRenewal ? "Добавятся к текущему сроку" : "Полный доступ к клубу"}</p>
           </div>
 
           <div className="checkout-total">
             <span>К оплате</span>
-            <strong>{plan.price}</strong>
+            <strong>{accessPackage.price}</strong>
           </div>
 
           <div className="checkout-meta">

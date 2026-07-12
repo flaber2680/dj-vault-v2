@@ -7,6 +7,7 @@ import {
   findUserByEmail,
   verifyPassword,
 } from "@/lib/auth/store";
+import { hasClubAccess } from "@/lib/access/subscription";
 import {
   requestPasswordReset,
   resetPasswordByToken,
@@ -96,7 +97,7 @@ export async function loginWithEmail(formData: FormData) {
   }
 
   await setSessionCookie(user.id);
-  redirect(user.plan && user.plan !== "free" ? "/collections" : "/account");
+  redirect(hasClubAccess(user) ? "/collections" : "/account");
 }
 
 export async function requestPasswordResetAction(formData: FormData) {

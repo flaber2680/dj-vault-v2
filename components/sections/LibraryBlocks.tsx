@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
+import { hasClubAccess } from "@/lib/access/subscription";
 import { getCollections, latestGenres } from "@/lib/content/collections";
-import { paidPlanList } from "@/lib/content/plans";
+import { accessPackageList } from "@/lib/content/plans";
 
 const ordinarySteps = [
   "Открыть DJ Pool",
@@ -67,7 +68,7 @@ export async function LibraryBlocks() {
   const collections = await getCollections();
   const latestCollection = collections[0];
 
-  const hasPaidPlan = user ? user.plan !== "free" : false;
+  const hasPaidPlan = user ? hasClubAccess(user) : false;
   const isGuest = !user;
 
   const pricingLabel = !user
@@ -76,7 +77,7 @@ export async function LibraryBlocks() {
       ? "Открыть подборки"
       : "Оформить доступ";
 
-  const getPricingHref = (planId: string) => {
+  const getPricingHref = (packageId: string) => {
     if (!user) {
       return "/register";
     }
@@ -85,7 +86,7 @@ export async function LibraryBlocks() {
       return "/collections";
     }
 
-    return `/checkout?plan=${planId}`;
+    return `/checkout?package=${packageId}`;
   };
 
   return (
@@ -330,28 +331,28 @@ export async function LibraryBlocks() {
       <section className="library-section pricing-section" id="pricing" data-reveal>
         <div className="section-kicker">
           <span>{isGuest ? "07" : "06"}</span>
-          <span>Тарифы</span>
+          <span>Доступ</span>
         </div>
 
         <div className="pricing-grid">
-          {paidPlanList.map((plan) => (
+          {accessPackageList.map((accessPackage) => (
             <article
               className={`pricing-card${
-                plan.name === "Pro" ? " pricing-card-featured" : ""
+                accessPackage.id === "days-90" ? " pricing-card-featured" : ""
               }`}
-              key={plan.name}
+              key={accessPackage.id}
               data-reveal
             >
-              {plan.badge && <span className="plan-badge">{plan.badge}</span>}
+              {accessPackage.badge ? <span className="plan-badge">{accessPackage.badge}</span> : null}
 
               <div className="plan-head">
-                <h3>{plan.name}</h3>
-                <p>{plan.period}</p>
+                <h3>{accessPackage.durationDays} дней</h3>
+                <p>Полный доступ к DJ Vault</p>
               </div>
 
               <div className="plan-price">
-                {plan.oldPrice && <span>{plan.oldPrice}</span>}
-                <strong>{plan.price}</strong>
+                {accessPackage.oldPrice && <span>{accessPackage.oldPrice}</span>}
+                <strong>{accessPackage.price}</strong>
               </div>
 
               <ul>
@@ -361,7 +362,7 @@ export async function LibraryBlocks() {
               </ul>
 
               <div className="plan-action">
-                <Link className="button-outline" href={getPricingHref(plan.id)}>
+                <Link className="button-outline" href={getPricingHref(accessPackage.id)}>
                   <span className="button-label">{pricingLabel}</span>
                 </Link>
               </div>

@@ -2,19 +2,25 @@ import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { promisify } from "util";
+import {
+  migrateLegacyAccessPlans,
+  normalizeAccessPlan,
+  type AccessPlan,
+  type StoredAccessPlan,
+} from "@/lib/access/subscription";
 
 const scryptAsync = promisify(scrypt);
 const dataDirectory = path.join(process.cwd(), ".data");
 const usersFile = path.join(dataDirectory, "users.json");
 
 export type AuthProvider = "email";
-export type TariffPlan = "free" | "start" | "pro" | "premium";
+export type TariffPlan = AccessPlan;
 
 export type StoredUser = {
   id: string;
   email: string;
   name: string;
-  plan?: TariffPlan;
+  plan?: StoredAccessPlan;
   planExpiresAt?: string;
   providers: AuthProvider[];
   passwordHash?: string;
@@ -43,7 +49,7 @@ export function getPublicUser(user: StoredUser): PublicUser {
     id: user.id,
     email: user.email,
     name: user.name,
-    plan: user.plan ?? "free",
+    plan: normalizeAccessPlan(user.plan),
     planExpiresAt: user.planExpiresAt,
     providers: user.providers,
     avatarUrl: user.avatarUrl,
@@ -54,7 +60,14 @@ export function getPublicUser(user: StoredUser): PublicUser {
 async function readUsers(): Promise<StoredUser[]> {
   try {
     const raw = await readFile(usersFile, "utf8");
-    return JSON.parse(raw) as StoredUser[];
+    const storedUsers = JSON.parse(raw) as StoredUser[];
+    const migration = migrateLegacyAccessPlans(storedUsers);
+
+    if (migration.changed) {
+      await writeUsers(migration.users);
+    }
+
+    return migration.users;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return [];

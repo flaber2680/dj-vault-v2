@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getPaidPlan } from "@/lib/content/plans";
+import { getAccessPackage } from "@/lib/content/plans";
 import {
   createStoredPayment,
   isPaymentMethod,
@@ -20,34 +20,35 @@ function formValue(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function redirectWithCheckoutError(planId: string, error: string): never {
-  redirect(`/checkout?plan=${planId}&error=${encodeURIComponent(error)}`);
+function redirectWithCheckoutError(packageId: string, error: string): never {
+  redirect(`/checkout?package=${packageId}&error=${encodeURIComponent(error)}`);
 }
 
 export async function startCheckout(formData: FormData) {
   const user = await getCurrentUser();
-  const plan = getPaidPlan(formValue(formData, "plan"));
+  const accessPackage = getAccessPackage(
+    formValue(formData, "packageId") || formValue(formData, "plan"),
+  );
   const method = formValue(formData, "method");
 
   if (!user) {
     redirect("/register");
   }
 
-  if (!plan) {
+  if (!accessPackage) {
     redirect("/pricing");
   }
 
   if (!isPaymentMethod(method)) {
-    redirectWithCheckoutError(plan.id, "invalid_method");
+    redirectWithCheckoutError(accessPackage.id, "invalid_method");
   }
 
-  const activationPlanId = user.plan !== "free" ? user.plan : plan.id;
   const storedPayment = await createStoredPayment({
     userId: user.id,
-    planId: plan.id,
-    activationPlanId,
+    packageId: accessPackage.id,
+    durationDays: accessPackage.durationDays,
     method,
-    amount: plan.amount,
+    amount: accessPackage.amount,
   });
 
   let confirmationUrl = "";
@@ -55,15 +56,15 @@ export async function startCheckout(formData: FormData) {
 
   try {
     const yookassaPayment = await createYooKassaPayment({
-      amount: plan.amount,
-      description: `DJ Vault ${plan.name}`,
+      amount: accessPackage.amount,
+      description: `DJ Vault: доступ на ${accessPackage.durationDays} дней`,
       method,
       returnUrl: `${getAppUrl()}/checkout/result?payment=${storedPayment.id}`,
       metadata: {
         localPaymentId: storedPayment.id,
         userId: user.id,
-        planId: plan.id,
-        activationPlanId,
+        packageId: accessPackage.id,
+        durationDays: String(accessPackage.durationDays),
       },
     });
 
@@ -95,7 +96,7 @@ export async function startCheckout(formData: FormData) {
     });
 
     redirectWithCheckoutError(
-      plan.id,
+      accessPackage.id,
       error instanceof YooKassaConfigError
         ? "payments_not_configured"
         : "payment_request_failed",
@@ -103,7 +104,7 @@ export async function startCheckout(formData: FormData) {
   }
 
   if (checkoutError) {
-    redirectWithCheckoutError(plan.id, checkoutError);
+    redirectWithCheckoutError(accessPackage.id, checkoutError);
   }
 
   redirect(confirmationUrl);

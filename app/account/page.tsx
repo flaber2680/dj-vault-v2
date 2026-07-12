@@ -2,15 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/auth/actions";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getPaidPlan } from "@/lib/content/plans";
-import type { TariffPlan } from "@/lib/auth/store";
-
-const planLabels: Record<TariffPlan, string> = {
-  free: "FREE",
-  start: "START",
-  pro: "PRO",
-  premium: "PREMIUM",
-};
+import { hasClubAccess } from "@/lib/access/subscription";
 
 const dayInMs = 24 * 60 * 60 * 1000;
 
@@ -50,9 +42,9 @@ export default async function AccountPage() {
     redirect("/login");
   }
 
-  const isFree = user.plan === "free";
-  const paidPlan = getPaidPlan(user.plan);
-  const daysLeft = getDaysLeft(user.planExpiresAt) ?? paidPlan?.durationDays ?? 0;
+  const isActiveClub = hasClubAccess(user);
+  const hasClubHistory = user.plan === "club";
+  const daysLeft = getDaysLeft(user.planExpiresAt) ?? 0;
 
   return (
     <main className="account-page">
@@ -79,7 +71,9 @@ export default async function AccountPage() {
             </form>
           </div>
 
-          <h1 className="auth-title">Ваш доступ активен</h1>
+          <h1 className="auth-title">
+            {isActiveClub ? "Ваш доступ активен" : "Доступ к клубу не активен"}
+          </h1>
           <p className="auth-description">
             Здесь хранится статус подписки и быстрый переход к закрытым
             подборкам DJ Vault.
@@ -88,12 +82,12 @@ export default async function AccountPage() {
 
         <div className="account-meta account-status">
           <span>Клуб</span>
-          <strong className={isFree ? "account-status-free" : "account-status-paid"}>
-            {planLabels[user.plan]}
+          <strong className={isActiveClub ? "account-status-paid" : "account-status-free"}>
+            {isActiveClub ? "CLUB" : hasClubHistory ? "ИСТЁК" : "FREE"}
           </strong>
         </div>
 
-        {!isFree ? (
+        {hasClubHistory ? (
           <div className="account-meta">
             <span>Осталось</span>
             <div className="account-renew">
@@ -118,7 +112,7 @@ export default async function AccountPage() {
             <span className="button-label">Открыть подборки</span>
           </Link>
 
-          {isFree ? (
+          {!isActiveClub ? (
             <Link className="button-outline" href="/pricing">
               <span className="button-label">Вступить в клуб</span>
             </Link>

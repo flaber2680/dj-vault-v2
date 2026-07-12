@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
+import { hasClubAccess } from "@/lib/access/subscription";
 import { registerDownloadAttempt } from "@/lib/downloads/store";
 import {
   DEMO_COLLECTION_NUMBER,
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   if (collection.number !== DEMO_COLLECTION_NUMBER) {
-    if (user.plan === "free") {
+    if (!hasClubAccess(user)) {
       return redirectTo("/pricing", request);
     }
   }

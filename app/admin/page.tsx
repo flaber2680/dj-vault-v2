@@ -3,6 +3,7 @@ import {
   createPromoCodeAction,
   resetDownloadLimitAction,
   saveCollectionAction,
+  updateUserAccessAction,
 } from "@/app/admin/actions";
 import { Header } from "@/components/layout/Header";
 import { ScrollEffects } from "@/components/ScrollEffects";
@@ -15,11 +16,16 @@ import {
   getCollections,
   getDemoCollection,
 } from "@/lib/content/collections";
-import { getPromoCodeDashboard } from "@/lib/referrals/store";
+import {
+  formatReferralPurchase,
+  getPromoCodeDashboard,
+} from "@/lib/referrals/store";
 
 type AdminPageProps = {
   searchParams?: Promise<{
     error?: string;
+    access_error?: string;
+    access_updated?: string;
     promo?: string;
     promo_error?: string;
     q?: string;
@@ -54,6 +60,23 @@ function formatAdminDate(value?: string) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function getDaysRemaining(value?: string) {
+  if (!value) {
+    return 0;
+  }
+
+  const expirationTime = Date.parse(value);
+
+  if (!Number.isFinite(expirationTime)) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.ceil((expirationTime - Date.now()) / (24 * 60 * 60 * 1000)),
+  );
 }
 
 function matchesUserSearch(
@@ -162,6 +185,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               {params.promo_error === "exists"
                 ? "Такой промокод уже существует."
                 : "Укажите пользователя и уникальный промокод."}
+            </div>
+          ) : null}
+
+          {params.access_updated ? (
+            <div className="admin-message">
+              Доступ пользователя {params.access_updated} обновлён.
+            </div>
+          ) : null}
+
+          {params.access_error ? (
+            <div className="admin-message admin-message-error">
+              {params.access_error === "days_required"
+                ? "Чтобы перевести Free-пользователя в Club, укажите количество дней."
+                : params.access_error === "days_not_allowed"
+                  ? "Нельзя добавить дни, пока выбран доступ Free."
+                  : params.access_error === "not_found"
+                    ? "Пользователь не найден."
+                    : params.access_error === "required"
+                      ? "Выберите пользователя и тип доступа."
+                      : "Количество дней должно быть целым числом от 0 до 3650."}
             </div>
           ) : null}
         </div>
@@ -308,7 +351,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <section className="admin-section" id="users">
           <div className="admin-section-head" data-reveal>
             <div><span>02 / Доступ</span><h2>Пользователи</h2></div>
-            <p>Тариф, срок доступа и использованные скачивания видны в одной строке.</p>
+            <p>Статус Club, срок доступа и использованные скачивания видны в одной строке.</p>
           </div>
 
           <form className="admin-search" action="/admin" data-reveal>
@@ -316,7 +359,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <span>Поиск пользователей</span>
               <input
                 name="q"
-                placeholder="Имя, email, тариф или промокод"
+                placeholder="Имя, email, доступ или промокод"
                 defaultValue={userQuery}
               />
             </label>
@@ -332,17 +375,49 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
           <div className="admin-users" data-reveal>
             <div className="admin-users-head">
-              <span>Пользователь</span><span>Тариф</span><span>Регистрация</span><span>Скачивания</span><span>Промокод</span>
+              <span>Пользователь</span><span>Доступ</span><span>Регистрация</span><span>Скачивания</span><span>Промокод</span>
             </div>
             {filteredUsers.length === 0 ? <p className="admin-empty">Пользователи не найдены.</p> : null}
             {filteredUsers.map((item) => {
               const records = downloadRecords.filter((record) => record.userId === item.id);
               const ownerCodes = promoCodesByOwner.get(item.id) ?? [];
+              const daysRemaining = getDaysRemaining(item.planExpiresAt);
 
               return (
                 <article className="admin-user-row" key={item.id}>
                   <div className="admin-user-identity"><strong>{item.name}</strong><span>{item.email}</span></div>
-                  <div className="admin-user-plan"><strong>{item.plan}</strong><span>{item.planExpiresAt ? `до ${formatAdminDate(item.planExpiresAt)}` : "без срока"}</span></div>
+                  <form action={updateUserAccessAction} className="admin-user-access">
+                    <input name="userId" type="hidden" value={item.id} />
+                    <div className="admin-user-access-summary">
+                      <strong>{item.plan === "club" ? "CLUB" : "FREE"}</strong>
+                      <span>
+                        {item.planExpiresAt
+                          ? `до ${formatAdminDate(item.planExpiresAt)} · ${daysRemaining} дн.`
+                          : "без срока"}
+                      </span>
+                    </div>
+                    <div className="admin-user-access-controls">
+                      <select
+                        aria-label={`Доступ для ${item.email}`}
+                        defaultValue={item.plan}
+                        name="accessPlan"
+                      >
+                        <option value="free">Free</option>
+                        <option value="club">Club</option>
+                      </select>
+                      <input
+                        aria-label={`Добавить дней для ${item.email}`}
+                        inputMode="numeric"
+                        max={3650}
+                        min={0}
+                        name="days"
+                        placeholder="+ дней"
+                        step={1}
+                        type="number"
+                      />
+                      <button type="submit">Применить</button>
+                    </div>
+                  </form>
                   <time>{formatAdminDate(item.createdAt)}</time>
                   <div className="admin-user-downloads">
                     {records.length === 0 ? <span className="admin-muted">Нет скачиваний</span> : records.map((record) => (
@@ -399,7 +474,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         <section className="admin-section" id="promo-codes">
           <div className="admin-section-head" data-reveal>
             <div><span>03 / Партнеры</span><h2>Промокоды</h2></div>
-            <p>Регистрация по коду видна сразу, но в зачёт идут только пользователи, которые купили платный тариф.</p>
+            <p>Регистрация по коду видна сразу, но в зачёт идут только пользователи, которые купили пакет доступа.</p>
           </div>
 
           <div className="admin-promo-list" data-reveal>
@@ -439,8 +514,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <span>{referral.user?.plan ?? "free"}</span>
                       <span>{formatAdminDate(referral.registeredAt)}</span>
                       <strong>
-                        {referral.convertedAt && referral.convertedPlan
-                          ? `${referral.convertedPlan} · ${formatAdminDate(referral.convertedAt)}`
+                        {referral.convertedAt
+                          ? `${formatReferralPurchase(referral)} · ${formatAdminDate(referral.convertedAt)}`
                           : "не купил"}
                       </strong>
                     </div>

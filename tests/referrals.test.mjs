@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  formatReferralPurchase,
   isPaidPlan,
   normalizePromoCode,
   summarizePromoCode,
@@ -13,9 +14,28 @@ test("normalizes promo codes for consistent matching", () => {
 
 test("counts only paid plans as referral conversions", () => {
   assert.equal(isPaidPlan("free"), false);
+  assert.equal(isPaidPlan("club"), true);
   assert.equal(isPaidPlan("start"), true);
   assert.equal(isPaidPlan("pro"), true);
   assert.equal(isPaidPlan("premium"), true);
+});
+
+test("formats a new referral conversion as purchased time and amount", () => {
+  assert.equal(
+    formatReferralPurchase({
+      convertedPackageId: "days-90",
+      convertedDurationDays: 90,
+      convertedAmount: 2700,
+    }),
+    "90 дней · 2700 ₽",
+  );
+});
+
+test("formats legacy referral plans through package compatibility", () => {
+  assert.equal(
+    formatReferralPurchase({ convertedPlan: "premium" }),
+    "180 дней · 4800 ₽",
+  );
 });
 
 test("summarizes promo code dashboard counts", () => {

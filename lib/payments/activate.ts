@@ -1,5 +1,6 @@
 import { findUserById, updateUserPlan } from "@/lib/auth/store";
-import { getPaidPlan } from "@/lib/content/plans";
+import { calculateExtendedExpiration } from "@/lib/access/subscription";
+import { getAccessPackage } from "@/lib/content/plans";
 import {
   findStoredPaymentById,
   findStoredPaymentByProviderId,
@@ -8,8 +9,6 @@ import {
 } from "@/lib/payments/store";
 import type { YooKassaPayment } from "@/lib/payments/yookassa";
 import { recordPaidReferralConversion } from "@/lib/referrals/store";
-
-const dayInMs = 24 * 60 * 60 * 1000;
 
 type ActivationResult = {
   payment: StoredPayment | null;
@@ -85,31 +84,28 @@ export async function activateYooKassaPayment(
   }
 
   const user = await findUserById(localPayment.userId);
-  const plan = getPaidPlan(localPayment.planId);
+  const accessPackage = getAccessPackage(
+    localPayment.packageId ?? localPayment.planId,
+  );
 
-  if (!user || !plan) {
+  if (!user || !accessPackage) {
     const updatedPayment = await updateStoredPayment(localPayment.id, {
       providerPaymentId: payment.id,
       providerStatus: payment.status,
       status: "failed",
-      error: !user ? "USER_NOT_FOUND" : "PLAN_NOT_FOUND",
+      error: !user ? "USER_NOT_FOUND" : "PACKAGE_NOT_FOUND",
     });
 
     return { payment: updatedPayment, activated: false, status: "failed" };
   }
 
-  const currentExpirationTime = user.planExpiresAt
-    ? Date.parse(user.planExpiresAt)
-    : 0;
-  const startsAt =
-    Number.isFinite(currentExpirationTime) && currentExpirationTime > Date.now()
-      ? currentExpirationTime
-      : Date.now();
-  const planExpiresAt = new Date(
-    startsAt + plan.durationDays * dayInMs,
-  ).toISOString();
+  const durationDays = localPayment.durationDays ?? accessPackage.durationDays;
+  const planExpiresAt = calculateExtendedExpiration(
+    user.planExpiresAt,
+    durationDays,
+  );
 
-  await updateUserPlan(user.id, localPayment.activationPlanId, planExpiresAt);
+  await updateUserPlan(user.id, "club", planExpiresAt);
 
   const updatedPayment = await updateStoredPayment(localPayment.id, {
     providerPaymentId: payment.id,
@@ -120,7 +116,9 @@ export async function activateYooKassaPayment(
 
   await recordPaidReferralConversion({
     paymentId: updatedPayment.id,
-    plan: localPayment.activationPlanId,
+    packageId: accessPackage.id,
+    durationDays,
+    amount: localPayment.amount,
     userId: user.id,
   });
 

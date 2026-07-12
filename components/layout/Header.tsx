@@ -1,18 +1,11 @@
 import Link from "next/link";
 import { isAdminUser } from "@/lib/auth/admin";
 import { getCurrentUser } from "@/lib/auth/session";
-import type { TariffPlan } from "@/lib/auth/store";
-
-const planLabels: Record<TariffPlan, string> = {
-  free: "FREE",
-  start: "START",
-  pro: "PRO",
-  premium: "PREMIUM",
-};
+import { hasClubAccess } from "@/lib/access/subscription";
 
 export async function Header() {
   const user = await getCurrentUser();
-  const hasPaidPlan = user ? user.plan !== "free" : false;
+  const hasPaidPlan = user ? hasClubAccess(user) : false;
 
   return (
     <header className="header">
@@ -29,7 +22,7 @@ export async function Header() {
       </nav>
 
       <div className="header-actions">
-        {user ? <span className="header-plan">{planLabels[user.plan]}</span> : null}
+        {user ? <span className="header-plan">{hasPaidPlan ? "CLUB" : "FREE"}</span> : null}
 
         <Link className="header-button" href={user ? "/account" : "/login"} prefetch={false}>
           <span className="button-label">{user ? "Кабинет" : "Войти"}</span>
