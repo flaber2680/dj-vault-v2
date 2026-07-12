@@ -792,7 +792,7 @@ body.is-scrolled .header {
 .plan-badge {
   width: max-content;
   max-width: 100%;
-  margin-bottom: 28px;
+  margin-bottom: 0;
   padding: 5px 8px;
   display: inline-flex;
   align-self: flex-end;
@@ -804,9 +804,22 @@ body.is-scrolled .header {
   white-space: nowrap;
 }
 
+.plan-topline {
+  width: 100%;
+  margin-bottom: 36px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.plan-topline .plan-badge {
+  align-self: start;
+}
+
 .plan-head {
   padding-right: 0;
-  margin-bottom: 36px;
+  margin-bottom: 0;
 }
 
 .pricing-card p {
@@ -2873,17 +2886,18 @@ body.is-scrolled .header {
     padding-right: 0;
   }
 
-  .pricing-card {
-    padding-top: clamp(76px, 17vw, 88px);
+  .plan-topline {
+    gap: 10px;
+  }
+
+  .pricing-card h3 {
+    font-size: 28px;
   }
 
   .pricing-card .plan-badge {
-    position: absolute;
-    top: 24px;
-    left: 24px;
-    max-width: calc(100% - 48px);
-    margin-bottom: 0;
-    align-self: flex-start;
+    max-width: 128px;
+    white-space: normal;
+    text-align: right;
   }
 
   .pain-process-item {

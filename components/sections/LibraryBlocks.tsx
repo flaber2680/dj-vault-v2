@@ -343,11 +343,11 @@ export async function LibraryBlocks() {
               key={accessPackage.id}
               data-reveal
             >
-              {accessPackage.badge ? <span className="plan-badge">{accessPackage.badge}</span> : null}
-
-              <div className="plan-head">
-                <h3>{accessPackage.durationDays} дней</h3>
-                <p>Полный доступ к DJ Vault</p>
+              <div className="plan-topline">
+                <div className="plan-head">
+                  <h3>{accessPackage.durationDays} дней</h3>
+                </div>
+                {accessPackage.badge ? <span className="plan-badge">{accessPackage.badge}</span> : null}
               </div>
 
               <div className="plan-price">

@@ -48,13 +48,13 @@ export default async function PricingPage() {
                 key={accessPackage.id}
                 data-reveal
               >
-                <span className="plan-badge">
-                  {accessPackage.badge}
-                </span>
-
-                <div className="plan-head">
-                  <h3>{accessPackage.durationDays} дней</h3>
-                  <p>{isRenewal ? "добавятся к доступу" : "доступ к DJ Vault"}</p>
+                <div className="plan-topline">
+                  <div className="plan-head">
+                    <h3>{accessPackage.durationDays} дней</h3>
+                  </div>
+                  <span className="plan-badge">
+                    {accessPackage.badge}
+                  </span>
                 </div>
 
                 <div className="plan-price">
