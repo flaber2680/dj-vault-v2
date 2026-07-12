@@ -2894,9 +2894,10 @@ body.is-scrolled .header {
     font-size: 28px;
   }
 
-  .pricing-card .plan-badge {
+  .plan-topline > .plan-badge {
     max-width: 128px;
-    white-space: normal;
+    font-size: 8px;
+    white-space: nowrap;
     text-align: right;
   }
 
