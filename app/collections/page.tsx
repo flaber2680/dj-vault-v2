@@ -239,7 +239,6 @@ export default async function CollectionsPage({
 
           {archive.releaseCount > 0 ? (
             <div className="collections-archive-summary" data-reveal>
-              <h2>Архив</h2>
               <div>
                 <span>
                   {formatArchiveTrackTotal(
@@ -297,7 +296,7 @@ export default async function CollectionsPage({
                         <h2>Подборка #{collection.number}</h2>
 
                         <div
-                          className="demo-card-tip-strip"
+                          className="demo-card-tip-strip collection-release-genres"
                           aria-label={`Жанры подборки ${collection.number}`}
                         >
                           {visibleGenreTips.map((tip) => (
@@ -315,7 +314,8 @@ export default async function CollectionsPage({
                               tabIndex={0}
                               aria-label={`Еще ${hiddenGenreTips.length} скрытых стилей`}
                             >
-                              +{hiddenGenreTips.length}
+                              <span>Еще</span>
+                              <strong>+{hiddenGenreTips.length}</strong>
                               <span
                                 className="demo-card-more-popover"
                                 role="tooltip"
