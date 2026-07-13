@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "data:verify": "node scripts/verify-data-migration.mjs",
     "start": "next start",
     "lint": "eslint"
   },
