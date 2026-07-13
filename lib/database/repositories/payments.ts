@@ -120,12 +120,12 @@ function mapPayment(row: PaymentRow): StoredPaymentRecord {
 }
 
 function getPaymentRow(db: Database.Database, id: string): PaymentRow | undefined {
-  return db.prepare("SELECT * FROM activated_payments WHERE id = ?").get(id) as PaymentRow | undefined;
+  return db.prepare("SELECT * FROM activated_payments WHERE id = ? AND provider IS NOT NULL").get(id) as PaymentRow | undefined;
 }
 
 function getPaymentByProviderId(db: Database.Database, providerPaymentId: string): PaymentRow | undefined {
   return db
-    .prepare("SELECT * FROM activated_payments WHERE provider_payment_id = ?")
+    .prepare("SELECT * FROM activated_payments WHERE provider_payment_id = ? AND provider IS NOT NULL")
     .get(providerPaymentId) as PaymentRow | undefined;
 }
 
@@ -144,7 +144,7 @@ function getActivatedPaymentIds(
 ): string[] {
   const rows = db
     .prepare(`
-      SELECT COALESCE(provider_payment_id, id) AS payment_id
+      SELECT id AS payment_id
       FROM activated_payments
       WHERE user_id = ?
         AND id <> ?
@@ -256,6 +256,32 @@ export function updateStoredPaymentRecord(id: string, patch: PaymentPatch): Stor
     }
     throw error;
   }
+}
+
+export function failStoredPaymentActivation(
+  id: string,
+  providerStatus: string,
+  error: string,
+): StoredPaymentRecord {
+  const db = getRuntimeDatabase();
+  const run = db.transaction(() => {
+    const current = getPaymentRow(db, id);
+    if (!current) {
+      throw new Error("PAYMENT_NOT_FOUND");
+    }
+
+    db.prepare(`
+      UPDATE activated_payments
+      SET provider_status = ?,
+          status = CASE WHEN status = 'succeeded' THEN status ELSE 'failed' END,
+          error = ?, updated_at = ?
+      WHERE id = ?
+    `).run(providerStatus, error, new Date().toISOString(), id);
+
+    return mapPayment(getPaymentRow(db, id)!);
+  });
+
+  return run.immediate();
 }
 
 export function activatePaymentTransaction(input: PaymentActivationInput): {

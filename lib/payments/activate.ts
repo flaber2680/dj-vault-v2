@@ -3,6 +3,7 @@ import { getPaymentPackage } from "@/lib/payments/packages";
 import {
   findStoredPaymentById,
   findStoredPaymentByProviderId,
+  failStoredPayment,
   updateStoredPayment,
   type StoredPayment,
 } from "@/lib/payments/store";
@@ -105,15 +106,13 @@ export async function activateYooKassaPayment(
       status: payment.status,
     };
   } catch (error) {
-    const updatedPayment = await updateStoredPayment(localPayment.id, {
-      providerPaymentId: payment.id,
-      providerStatus: payment.status,
-      status: "failed",
-      error:
-        error instanceof Error && error.message === "USER_NOT_FOUND"
-          ? "USER_NOT_FOUND"
-          : "ACCESS_ACTIVATION_FAILED",
-    });
+    const updatedPayment = await failStoredPayment(
+      localPayment.id,
+      payment.status,
+      error instanceof Error && error.message === "USER_NOT_FOUND"
+        ? "USER_NOT_FOUND"
+        : "ACCESS_ACTIVATION_FAILED",
+    );
     return { payment: updatedPayment, activated: false, status: "failed" };
   }
 }

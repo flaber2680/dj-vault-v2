@@ -67,7 +67,7 @@ function getRecordRow(
 
 export function getDownloadRecords(): DownloadRecord[] {
   const db = getRuntimeDatabase();
-  const rows = db.prepare("SELECT * FROM download_records").all() as DownloadRecordRow[];
+  const rows = db.prepare("SELECT * FROM download_records ORDER BY rowid").all() as DownloadRecordRow[];
   return rows.map((row) => mapDownloadRecord(db, row));
 }
 

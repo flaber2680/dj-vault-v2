@@ -1,6 +1,7 @@
 import { randomBytes, scrypt, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import {
+  applyStoredAdminAccessChange,
   applyStoredPaidPaymentAccess,
   createEmailUser,
   findStoredUserByEmail,
@@ -102,6 +103,15 @@ export async function updateUserPlan(
   planExpiresAt?: string,
 ) {
   return updateStoredUserPlan(id, plan, planExpiresAt) as PublicUser;
+}
+
+export async function applyAdminAccessChange(
+  id: string,
+  nextPlan: TariffPlan,
+  days: number,
+  now = new Date(),
+) {
+  return applyStoredAdminAccessChange(id, nextPlan, days, now) as PublicUser;
 }
 
 export async function applyPaidPaymentAccess(

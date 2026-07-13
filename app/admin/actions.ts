@@ -8,10 +8,9 @@ import { resetDownloadLimit } from "@/lib/downloads/store";
 import { saveCollection } from "@/lib/content/collections";
 import { createPromoCodeForUser } from "@/lib/referrals/store";
 import {
-  calculateAdminAccessChange,
   type AccessPlan,
 } from "@/lib/access/subscription";
-import { findUserById, updateUserPlan } from "@/lib/auth/store";
+import { applyAdminAccessChange } from "@/lib/auth/store";
 
 function getField(formData: FormData, name: string) {
   const value = formData.get(name);
@@ -143,23 +142,16 @@ export async function updateUserAccessAction(formData: FormData) {
     redirect("/admin?section=users&access_error=required");
   }
 
-  const targetUser = await findUserById(userId);
-
-  if (!targetUser) {
-    redirect("/admin?section=users&access_error=not_found");
-  }
-
-  let change: ReturnType<typeof calculateAdminAccessChange>;
+  let targetUser: Awaited<ReturnType<typeof applyAdminAccessChange>>;
 
   try {
-    change = calculateAdminAccessChange({
-      currentPlan: targetUser.plan,
-      currentExpiresAt: targetUser.planExpiresAt,
-      nextPlan: accessPlan,
-      days,
-    });
+    targetUser = await applyAdminAccessChange(userId, accessPlan, days);
   } catch (error) {
     const code = (error as Error).message;
+
+    if (code === "USER_NOT_FOUND") {
+      redirect("/admin?section=users&access_error=not_found");
+    }
 
     if (code === "ACCESS_DAYS_REQUIRED") {
       redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&access_error=days_required`);
@@ -171,12 +163,6 @@ export async function updateUserAccessAction(formData: FormData) {
 
     redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&access_error=invalid_days`);
   }
-
-  await updateUserPlan(
-    targetUser.id,
-    change.plan,
-    change.planExpiresAt,
-  );
 
   revalidatePath("/admin");
   revalidatePath("/account");

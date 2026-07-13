@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type Database from "better-sqlite3";
 import {
+  calculateAdminAccessChange,
   normalizeAccessPlan,
   type AccessPlan,
   type StoredAccessPlan,
@@ -75,7 +76,7 @@ function getProviders(db: Database.Database, userId: string): Array<"email"> {
 function getActivatedPaymentIds(db: Database.Database, userId: string, excludeId?: string): string[] {
   const rows = db
     .prepare(`
-      SELECT COALESCE(provider_payment_id, id) AS payment_id
+      SELECT id AS payment_id
       FROM activated_payments
       WHERE user_id = ?
         AND (activated_at IS NOT NULL OR status = 'succeeded' OR status IS NULL)
@@ -250,6 +251,41 @@ export function updateStoredUserPlan(
     db.prepare(`
       UPDATE users SET plan = ?, plan_expires_at = ?, updated_at = ? WHERE id = ?
     `).run(plan, plan === "free" ? null : planExpiresAt ?? null, new Date().toISOString(), id);
+    return getPublicUser(toStoredUser(db, getUserRowById(db, id)!));
+  });
+
+  return run.immediate();
+}
+
+export function applyStoredAdminAccessChange(
+  id: string,
+  nextPlan: AccessPlan,
+  days: number,
+  now = new Date(),
+): PublicUserRecord {
+  const db = getRuntimeDatabase();
+  const run = db.transaction(() => {
+    const current = getUserRowById(db, id);
+    if (!current) {
+      throw new Error("USER_NOT_FOUND");
+    }
+
+    const change = calculateAdminAccessChange({
+      currentPlan: current.plan ?? "free",
+      currentExpiresAt: current.plan_expires_at ?? undefined,
+      nextPlan,
+      days,
+      now,
+    });
+    db.prepare(`
+      UPDATE users SET plan = ?, plan_expires_at = ?, updated_at = ? WHERE id = ?
+    `).run(
+      change.plan,
+      change.planExpiresAt ?? null,
+      now.toISOString(),
+      id,
+    );
+
     return getPublicUser(toStoredUser(db, getUserRowById(db, id)!));
   });
 

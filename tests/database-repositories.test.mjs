@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { Worker } from "node:worker_threads";
 
 import {
   configureRuntimeDatabaseForTests,
@@ -15,9 +16,11 @@ import {
   getUsers,
   registerEmailUserWithReferral,
 } from "../lib/auth/store.ts";
+import * as authStore from "../lib/auth/store.ts";
 import {
   createStoredPayment,
   findStoredPaymentById,
+  findStoredPaymentByProviderId,
   updateStoredPayment,
 } from "../lib/payments/store.ts";
 import { activateYooKassaPayment } from "../lib/payments/activate.ts";
@@ -33,6 +36,7 @@ import {
 } from "../lib/content/collections.ts";
 import {
   getDownloadRecord,
+  getDownloadRecords,
   registerDownloadAttempt,
   resetDownloadLimit,
 } from "../lib/downloads/store.ts";
@@ -61,12 +65,12 @@ async function snapshotLegacyFiles(directory) {
   );
 }
 
-async function createRuntimeFixture(t) {
+async function createRuntimeFixture(t, overrides = {}) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "dj-vault-runtime-"));
   const databasePath = path.join(directory, "runtime.sqlite");
 
   await Promise.all(
-    Object.entries(legacyFiles).map(([fileName, contents]) =>
+    Object.entries({ ...legacyFiles, ...overrides }).map(([fileName, contents]) =>
       writeFile(path.join(directory, fileName), contents, "utf8"),
     ),
   );
@@ -77,7 +81,28 @@ async function createRuntimeFixture(t) {
     await rm(directory, { force: true, recursive: true });
   });
 
-  return { directory, before: await snapshotLegacyFiles(directory) };
+  return { directory, databasePath, before: await snapshotLegacyFiles(directory) };
+}
+
+function runDownloadWorker({ dataDirectory, databasePath, input, startGate }) {
+  const worker = new Worker(new URL("./download-attempt-worker.mjs", import.meta.url), {
+    execArgv: ["--import", new URL("./register-alias-loader.mjs", import.meta.url).href],
+    workerData: { dataDirectory, databasePath, input, startGate },
+  });
+
+  return {
+    ready: new Promise((resolve, reject) => {
+      worker.once("error", reject);
+      worker.once("message", resolve);
+    }),
+    result: new Promise((resolve, reject) => {
+      worker.on("error", reject);
+      worker.on("message", (message) => {
+        if (message.result) resolve(message.result);
+        if (message.error) reject(new Error(message.error));
+      });
+    }),
+  };
 }
 
 async function createOwnerWithPromo(code = "VAULT2026") {
@@ -260,8 +285,112 @@ test("a legacy succeeded payment never extends imported access a second time", a
   );
 });
 
-test("concurrent attempts for the final download slot allow exactly one", async (t) => {
+test("rejected provider IDs remain unclaimed for mismatched and already-owned payments", async (t) => {
   await createRuntimeFixture(t);
+  const user = await createUserWithEmail({
+    email: "provider-identity@example.com",
+    password: "provider-identity-password",
+  });
+  const mismatched = await createStoredPayment({
+    userId: user.id,
+    packageId: "days-30",
+    durationDays: 30,
+    method: "bank_card",
+    amount: 1000,
+  });
+  await updateStoredPayment(mismatched.id, {
+    providerPaymentId: "provider-original",
+    providerStatus: "pending",
+  });
+
+  const mismatchResult = await activateYooKassaPayment({
+    id: "provider-free",
+    status: "succeeded",
+    paid: true,
+    amount: { value: "1000", currency: "RUB" },
+    metadata: { localPaymentId: mismatched.id },
+  });
+
+  assert.equal(mismatchResult.status, "failed");
+  assert.equal((await findStoredPaymentById(mismatched.id))?.providerPaymentId, "provider-original");
+  assert.equal(await findStoredPaymentByProviderId("provider-free"), null);
+
+  const owner = await createStoredPayment({
+    userId: user.id,
+    packageId: "days-30",
+    durationDays: 30,
+    method: "bank_card",
+    amount: 1000,
+  });
+  await updateStoredPayment(owner.id, { providerPaymentId: "provider-owned" });
+  const contender = await createStoredPayment({
+    userId: user.id,
+    packageId: "days-30",
+    durationDays: 30,
+    method: "bank_card",
+    amount: 1000,
+  });
+
+  const ownedResult = await activateYooKassaPayment({
+    id: "provider-owned",
+    status: "succeeded",
+    paid: true,
+    amount: { value: "1000", currency: "RUB" },
+    metadata: { localPaymentId: contender.id },
+  });
+
+  assert.equal(ownedResult.status, "failed");
+  assert.equal((await findStoredPaymentById(contender.id))?.providerPaymentId, undefined);
+  assert.equal((await findStoredPaymentByProviderId("provider-owned"))?.id, owner.id);
+});
+
+test("legacy activation IDs stay in user history without becoming pending payments", async (t) => {
+  await createRuntimeFixture(t, {
+    "users.json": `${JSON.stringify([{
+      id: "legacy-activation-user",
+      email: "legacy-activation@example.com",
+      name: "Legacy Activation",
+      plan: "club",
+      activatedPaymentIds: ["activation-history-id"],
+      providers: ["email"],
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    }], null, 2)}\n`,
+  });
+
+  const user = await findUserByEmail("legacy-activation@example.com");
+  const storedUser = getRuntimeDatabase()
+    .prepare("SELECT provider_payment_id FROM activated_payments WHERE id = ?")
+    .get("activation-history-id");
+
+  assert.deepEqual(user.activatedPaymentIds, ["activation-history-id"]);
+  assert.equal(storedUser.provider_payment_id, "activation-history-id");
+  assert.equal(await findStoredPaymentById("activation-history-id"), null);
+  assert.equal(await findStoredPaymentByProviderId("activation-history-id"), null);
+});
+
+test("admin add-days operations compose inside repository transactions", async (t) => {
+  await createRuntimeFixture(t);
+  const user = await createUserWithEmail({
+    email: "admin-extension@example.com",
+    password: "admin-extension-password",
+  });
+  const now = new Date("2026-07-13T00:00:00.000Z");
+
+  assert.equal(typeof authStore.applyAdminAccessChange, "function");
+  await Promise.all([
+    authStore.applyAdminAccessChange(user.id, "club", 10, now),
+    authStore.applyAdminAccessChange(user.id, "club", 20, now),
+  ]);
+
+  assert.equal(
+    (await findUserByEmail(user.email)).planExpiresAt,
+    "2026-08-12T00:00:00.000Z",
+  );
+});
+
+test("two SQLite connections contesting the final download slot allow exactly one", async (t) => {
+  const { directory, databasePath } = await createRuntimeFixture(t);
   const user = await createUserWithEmail({
     email: "downloads@example.com",
     password: "download-password",
@@ -275,13 +404,43 @@ test("concurrent attempts for the final download slot allow exactly one", async 
   };
 
   assert.equal((await registerDownloadAttempt(input)).allowed, true);
-  const results = await Promise.all([
-    registerDownloadAttempt(input),
-    registerDownloadAttempt(input),
-  ]);
+  resetRuntimeDatabaseForTests();
+  const startGate = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT);
+  const workers = [1, 2].map(() => runDownloadWorker({
+    dataDirectory: directory,
+    databasePath,
+    input,
+    startGate,
+  }));
+  await Promise.all(workers.map((worker) => worker.ready));
+  Atomics.store(new Int32Array(startGate), 0, 1);
+  Atomics.notify(new Int32Array(startGate), 0, 2);
+  const results = await Promise.all(workers.map((worker) => worker.result));
+  configureRuntimeDatabaseForTests({ dataDirectory: directory, databasePath });
 
   assert.equal(results.filter((result) => result.allowed).length, 1);
   assert.equal((await getDownloadRecord(user.id, input.archiveId))?.downloadCount, 2);
+});
+
+test("download records preserve deterministic SQLite insertion order", async (t) => {
+  await createRuntimeFixture(t);
+  const user = await createUserWithEmail({
+    email: "download-order@example.com",
+    password: "download-order-password",
+  });
+
+  for (const archiveId of ["010", "002", "007"]) {
+    await registerDownloadAttempt({
+      archiveId,
+      ipAddress: "192.0.2.8",
+      limit: 2,
+      userAgent: "Order test",
+      userId: user.id,
+    });
+  }
+
+  getRuntimeDatabase().pragma("reverse_unordered_selects = ON");
+  assert.deepEqual((await getDownloadRecords()).map((record) => record.archiveId), ["010", "002", "007"]);
 });
 
 test("resetting a download limit removes its aggregate and event history together", async (t) => {
@@ -340,6 +499,39 @@ test("password reset consumption changes a password hash once", async (t) => {
       .get(user.id).password_hash,
     "new-password-hash",
   );
+});
+
+test("legacy non-HTTP collection download URLs remain effective runtime S3 keys", async (t) => {
+  const legacyCollections = [
+    {
+      number: "027",
+      date: "6 July 2026",
+      size: "4 GB",
+      genres: "House",
+      description: "Imported archive",
+      tracks: "100 tracks",
+      downloadUrl: "archives/027.zip",
+      isActive: true,
+      downloadLimit: 2,
+    },
+    {
+      number: "demo",
+      date: "6 July 2026",
+      size: "300 MB",
+      genres: "House",
+      description: "Imported demo",
+      tracks: "10 tracks",
+      downloadUrl: "archives/demo.zip",
+      isActive: true,
+      downloadLimit: 2,
+    },
+  ];
+  await createRuntimeFixture(t, {
+    "collections.json": `${JSON.stringify(legacyCollections, null, 2)}\n`,
+  });
+
+  assert.equal((await getCollections())[0].s3Key, "archives/027.zip");
+  assert.equal((await getDemoCollection()).s3Key, "archives/demo.zip");
 });
 
 test("public store shapes preserve sorting, dashboard data, and download history", async (t) => {

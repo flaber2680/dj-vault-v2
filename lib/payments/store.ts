@@ -3,6 +3,7 @@ import type { LegacyPackageId } from "@/lib/content/plans";
 import type { PaymentPackageId } from "@/lib/payments/packages";
 import {
   createStoredPaymentRecord,
+  failStoredPaymentActivation,
   findStoredPaymentRecordById,
   findStoredPaymentRecordByProviderId,
   updateStoredPaymentRecord,
@@ -60,4 +61,12 @@ export async function updateStoredPayment(
   >,
 ) {
   return updateStoredPaymentRecord(id, patch as PaymentPatch) as StoredPayment;
+}
+
+export async function failStoredPayment(
+  id: string,
+  providerStatus: string,
+  error: string,
+) {
+  return failStoredPaymentActivation(id, providerStatus, error) as StoredPayment;
 }

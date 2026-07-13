@@ -185,7 +185,15 @@ async function enrichCollectionFromS3(input: CollectionInput) {
 }
 
 function toCollectionItem(record: CollectionRecord): CollectionItem {
-  const collection = { ...record };
+  const legacyDownloadUrl = record.legacyDownloadUrl?.trim();
+  const collection = {
+    ...record,
+    s3Key:
+      record.s3Key?.trim() ||
+      (legacyDownloadUrl && !/^https?:\/\//i.test(legacyDownloadUrl)
+        ? legacyDownloadUrl
+        : undefined),
+  };
   delete collection.legacyDownloadUrl;
   return collection;
 }
