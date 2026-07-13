@@ -11,6 +11,7 @@ import {
   getS3ConfigStatus,
   getS3ObjectMetadata,
 } from "@/lib/storage/s3";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 type RouteContext = {
   params: Promise<{
@@ -90,6 +91,23 @@ export async function GET(request: NextRequest, context: RouteContext) {
     if (!hasClubAccess(user)) {
       return redirectTo("/pricing", request);
     }
+  }
+
+  const rateLimit = consumeRateLimit({
+    scope: "download:user",
+    subject: user.id,
+    limit: 30,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "rate_limit" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
   }
 
   if (!collection.s3Key) {

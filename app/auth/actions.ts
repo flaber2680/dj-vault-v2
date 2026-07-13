@@ -14,6 +14,11 @@ import {
 } from "@/lib/auth/password-reset";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
 import { normalizeAuthReturnPath } from "@/lib/auth/return-path";
+import {
+  createEmailRateLimitSubject,
+  getServerActionNetworkRateLimitSubject,
+} from "@/lib/security/client-key";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 function formValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -45,6 +50,30 @@ function redirectToPasswordReset(error: string, token?: string): never {
   redirect(`/reset-password?${params.toString()}`);
 }
 
+type ServerActionRateLimit = {
+  scope: string;
+  subject?: string;
+  limit: number;
+  windowMs: number;
+};
+
+async function allowsServerActionRateLimits(
+  limits: ServerActionRateLimit[],
+): Promise<boolean> {
+  const networkSubject = await getServerActionNetworkRateLimitSubject();
+  let allowed = true;
+
+  for (const limit of limits) {
+    const result = consumeRateLimit({
+      ...limit,
+      subject: limit.subject ?? networkSubject,
+    });
+    allowed &&= result.allowed;
+  }
+
+  return allowed;
+}
+
 export async function registerWithEmail(formData: FormData) {
   const name = formValue(formData, "name");
   const email = formValue(formData, "email");
@@ -54,6 +83,18 @@ export async function registerWithEmail(formData: FormData) {
 
   if (!email.includes("@") || password.length < 10) {
     redirectWithError("/register", "invalid_register", returnTo);
+  }
+
+  if (
+    !(await allowsServerActionRateLimits([
+      {
+        scope: "register:ip",
+        limit: 8,
+        windowMs: 60 * 60 * 1000,
+      },
+    ]))
+  ) {
+    redirectWithError("/register", "unknown", returnTo);
   }
 
   try {
@@ -88,6 +129,24 @@ export async function loginWithEmail(formData: FormData) {
   const password = formValue(formData, "password");
   const returnTo = normalizeAuthReturnPath(formValue(formData, "returnTo"));
 
+  if (
+    !(await allowsServerActionRateLimits([
+      {
+        scope: "login:ip",
+        limit: 10,
+        windowMs: 15 * 60 * 1000,
+      },
+      {
+        scope: "login:email",
+        subject: createEmailRateLimitSubject(email),
+        limit: 8,
+        windowMs: 15 * 60 * 1000,
+      },
+    ]))
+  ) {
+    redirectWithError("/login", "invalid_login", returnTo);
+  }
+
   const user = await findUserByEmail(email);
   const isValidPassword = await verifyPassword(password, user?.passwordHash);
 
@@ -104,6 +163,24 @@ export async function requestPasswordResetAction(formData: FormData) {
   const params = new URLSearchParams({ sent: "1" });
 
   if (email.includes("@")) {
+    if (
+      !(await allowsServerActionRateLimits([
+        {
+          scope: "password-reset-request:ip",
+          limit: 5,
+          windowMs: 60 * 60 * 1000,
+        },
+        {
+          scope: "password-reset-request:email",
+          subject: createEmailRateLimitSubject(email),
+          limit: 3,
+          windowMs: 60 * 60 * 1000,
+        },
+      ]))
+    ) {
+      redirect(`/forgot-password?${params.toString()}`);
+    }
+
     try {
       await requestPasswordReset(email);
     } catch {
@@ -124,6 +201,18 @@ export async function resetPasswordAction(formData: FormData) {
 
   if (password.length < 10) {
     redirectToPasswordReset("short_password", token);
+  }
+
+  if (
+    !(await allowsServerActionRateLimits([
+      {
+        scope: "password-reset-submit:ip",
+        limit: 10,
+        windowMs: 60 * 60 * 1000,
+      },
+    ]))
+  ) {
+    redirectToPasswordReset("invalid", token);
   }
 
   try {
