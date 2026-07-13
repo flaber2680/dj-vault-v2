@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getAccessPackage } from "@/lib/content/plans";
+import { getCheckoutPackage } from "@/lib/payments/packages";
 import {
   createStoredPayment,
   isPaymentMethod,
@@ -26,14 +26,16 @@ function redirectWithCheckoutError(packageId: string, error: string): never {
 
 export async function startCheckout(formData: FormData) {
   const user = await getCurrentUser();
-  const accessPackage = getAccessPackage(
-    formValue(formData, "packageId") || formValue(formData, "plan"),
-  );
   const method = formValue(formData, "method");
 
   if (!user) {
     redirect("/register");
   }
+
+  const accessPackage = getCheckoutPackage(
+    formValue(formData, "packageId") || formValue(formData, "plan"),
+    user.email,
+  );
 
   if (!accessPackage) {
     redirect("/pricing");

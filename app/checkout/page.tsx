@@ -5,7 +5,7 @@ import { Header } from "@/components/layout/Header";
 import { ScrollEffects } from "@/components/ScrollEffects";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
-import { getAccessPackage } from "@/lib/content/plans";
+import { getCheckoutPackage } from "@/lib/payments/packages";
 
 type CheckoutPageProps = {
   searchParams?: Promise<{
@@ -25,15 +25,19 @@ const checkoutErrors: Record<string, string> = {
 
 export default async function CheckoutPage({ searchParams }: CheckoutPageProps) {
   const params = searchParams ? await searchParams : {};
-  const accessPackage = getAccessPackage(params.package ?? params.plan);
   const user = await getCurrentUser();
-
-  if (!accessPackage) {
-    redirect("/pricing");
-  }
 
   if (!user) {
     redirect("/register");
+  }
+
+  const accessPackage = getCheckoutPackage(
+    params.package ?? params.plan,
+    user.email,
+  );
+
+  if (!accessPackage) {
+    redirect("/pricing");
   }
 
   const isRenewal = hasClubAccess(user);

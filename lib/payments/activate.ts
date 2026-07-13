@@ -1,5 +1,5 @@
 import { applyPaidPaymentAccess } from "@/lib/auth/store";
-import { getAccessPackage } from "@/lib/content/plans";
+import { getPaymentPackage } from "@/lib/payments/packages";
 import {
   findStoredPaymentById,
   findStoredPaymentByProviderId,
@@ -82,7 +82,7 @@ export async function activateYooKassaPayment(
     return { payment: updatedPayment, activated: false, status: "amount_mismatch" };
   }
 
-  const accessPackage = getAccessPackage(
+  const accessPackage = getPaymentPackage(
     localPayment.packageId ?? localPayment.planId,
   );
 
@@ -127,13 +127,15 @@ export async function activateYooKassaPayment(
     paidAt: new Date().toISOString(),
   });
 
-  await recordPaidReferralConversion({
-    paymentId: updatedPayment.id,
-    packageId: accessPackage.id,
-    durationDays,
-    amount: localPayment.amount,
-    userId: localPayment.userId,
-  });
+  if (!accessPackage.isSmoke) {
+    await recordPaidReferralConversion({
+      paymentId: updatedPayment.id,
+      packageId: accessPackage.id,
+      durationDays,
+      amount: localPayment.amount,
+      userId: localPayment.userId,
+    });
+  }
 
   return {
     payment: updatedPayment,

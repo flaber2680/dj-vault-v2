@@ -2,10 +2,10 @@ import { randomUUID } from "crypto";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import type {
-  AccessPackageId,
   LegacyPackageId,
 } from "@/lib/content/plans";
 import type { StoredAccessPlan } from "@/lib/access/subscription";
+import type { PaymentPackageId } from "@/lib/payments/packages";
 import { createMutationQueue } from "@/lib/storage/mutation-queue";
 
 const dataDirectory = path.join(process.cwd(), ".data");
@@ -21,7 +21,7 @@ export type StoredPayment = {
   providerStatus?: string;
   confirmationUrl?: string;
   userId: string;
-  packageId?: AccessPackageId;
+  packageId?: PaymentPackageId;
   durationDays?: number;
   planId?: LegacyPackageId;
   activationPlanId?: Exclude<StoredAccessPlan, "free">;
@@ -37,7 +37,7 @@ export type StoredPayment = {
 
 type CreatePaymentInput = {
   userId: string;
-  packageId: AccessPackageId;
+  packageId: PaymentPackageId;
   durationDays: number;
   method: PaymentMethod;
   amount: number;

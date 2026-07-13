@@ -55,3 +55,21 @@
 - [ ] Run `npm.cmd run build`.
 - [ ] Run `git diff --check` and review the scoped diff.
 - [ ] Configure test credentials directly on the server, subscribe the webhook, and complete a test payment before replacing them with live credentials.
+
+### Task 4: Admin-Only Live Smoke Payment
+
+**Files:**
+- Create: `lib/payments/packages.ts`
+- Create: `tests/payment-packages.test.mjs`
+- Modify: `lib/payments/store.ts`
+- Modify: `lib/payments/activate.ts`
+- Modify: `app/checkout/page.tsx`
+- Modify: `app/checkout/actions.ts`
+- Modify: `.env.example`
+
+- [x] Add tests proving the public package list stays unchanged and the smoke package is gated by both admin identity and environment flag.
+- [x] Define `smoke-100` as one day for 100 RUB outside the public package list.
+- [x] Use the gated resolver in both checkout rendering and checkout submission.
+- [x] Let activation resolve an existing smoke payment even after the flag is disabled.
+- [x] Skip referral conversion for smoke payments.
+- [ ] Enable the flag only for the live smoke test, then disable it and restart the app.
