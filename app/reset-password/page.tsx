@@ -12,6 +12,7 @@ const errorMessages: Record<string, string> = {
   invalid:
     "Ссылка недействительна или устарела. Запросите восстановление еще раз.",
   short_password: "Пароль должен быть не короче 10 символов.",
+  rate_limited: "Слишком много попыток. Подождите немного и попробуйте снова.",
 };
 
 export default async function ResetPasswordPage({

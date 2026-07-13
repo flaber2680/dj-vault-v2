@@ -18,7 +18,7 @@ import {
   createEmailRateLimitSubject,
   getServerActionNetworkRateLimitSubject,
 } from "@/lib/security/client-key";
-import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { consumeRateLimits } from "@/lib/security/rate-limit";
 
 function formValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -61,17 +61,12 @@ async function allowsServerActionRateLimits(
   limits: ServerActionRateLimit[],
 ): Promise<boolean> {
   const networkSubject = await getServerActionNetworkRateLimitSubject();
-  let allowed = true;
-
-  for (const limit of limits) {
-    const result = consumeRateLimit({
+  return consumeRateLimits({
+    limits: limits.map((limit) => ({
       ...limit,
       subject: limit.subject ?? networkSubject,
-    });
-    allowed &&= result.allowed;
-  }
-
-  return allowed;
+    })),
+  }).allowed;
 }
 
 export async function registerWithEmail(formData: FormData) {
@@ -94,7 +89,7 @@ export async function registerWithEmail(formData: FormData) {
       },
     ]))
   ) {
-    redirectWithError("/register", "unknown", returnTo);
+    redirectWithError("/register", "rate_limited", returnTo);
   }
 
   try {
@@ -144,7 +139,7 @@ export async function loginWithEmail(formData: FormData) {
       },
     ]))
   ) {
-    redirectWithError("/login", "invalid_login", returnTo);
+    redirectWithError("/login", "rate_limited", returnTo);
   }
 
   const user = await findUserByEmail(email);
@@ -178,7 +173,7 @@ export async function requestPasswordResetAction(formData: FormData) {
         },
       ]))
     ) {
-      redirect(`/forgot-password?${params.toString()}`);
+      redirect("/forgot-password?error=rate_limited");
     }
 
     try {
@@ -212,7 +207,7 @@ export async function resetPasswordAction(formData: FormData) {
       },
     ]))
   ) {
-    redirectToPasswordReset("invalid", token);
+    redirectToPasswordReset("rate_limited", token);
   }
 
   try {

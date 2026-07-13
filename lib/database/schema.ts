@@ -138,6 +138,13 @@ const migrations: Migration[] = [
       );
     `,
   },
+  {
+    name: "002_rate_limits_expires_at_index",
+    sql: `
+      CREATE INDEX idx_rate_limits_expires_at
+      ON rate_limits(expires_at);
+    `,
+  },
 ];
 
 export function initializeDatabase(db: Database.Database): void {

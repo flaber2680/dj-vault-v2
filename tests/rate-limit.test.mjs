@@ -26,7 +26,10 @@ import {
   createEmailRateLimitSubject,
   getNetworkRateLimitSubject,
 } from "../lib/security/client-key.ts";
-import { consumeRateLimit } from "../lib/security/rate-limit.ts";
+import {
+  consumeRateLimit,
+  consumeRateLimits,
+} from "../lib/security/rate-limit.ts";
 
 const legacyFiles = {
   "collections.json": "[]\n",
@@ -148,6 +151,34 @@ test("keeps scopes and subjects independent", async (t) => {
   );
 });
 
+test("paired limits increment every bucket only when all buckets allow", async (t) => {
+  await createRuntimeFixture(t);
+  const now = 2_500_000;
+  const ipLimit = {
+    scope: "login:ip",
+    subject: "blocked-network",
+    limit: 1,
+    windowMs: 60_000,
+  };
+  const emailLimit = {
+    scope: "login:email",
+    subject: "victim-email",
+    limit: 3,
+    windowMs: 60_000,
+  };
+
+  assert.equal(consumeRateLimit({ ...ipLimit, now }).allowed, true);
+  assert.equal(
+    consumeRateLimits({ limits: [ipLimit, emailLimit], now }).allowed,
+    false,
+  );
+  assert.deepEqual(consumeRateLimit({ ...emailLimit, now }), {
+    allowed: true,
+    remaining: 2,
+    retryAfterSeconds: 0,
+  });
+});
+
 test("resets at the exact expiry boundary", async (t) => {
   await createRuntimeFixture(t);
   const input = {
@@ -263,7 +294,19 @@ test("hashes normalized email and network subjects before persisting rate-limit 
   assert.equal(keys.includes(rawIp), false);
 });
 
-test("registration rate limiting blocks user creation with the existing generic outcome", async (t) => {
+test("caps oversized forwarding input before parsing and falls back safely", () => {
+  const unknownSubject = getNetworkRateLimitSubject(new Headers());
+  const oversizedForwardingValue = `${"x".repeat(1024)},203.0.113.44`;
+
+  assert.equal(
+    getNetworkRateLimitSubject(
+      new Headers({ "x-forwarded-for": oversizedForwardingValue }),
+    ),
+    unknownSubject,
+  );
+});
+
+test("registration rate limiting blocks user creation with the rate-limited outcome", async (t) => {
   await createRuntimeFixture(t);
 
   for (let index = 0; index < 8; index += 1) {
@@ -279,14 +322,14 @@ test("registration rate limiting blocks user creation with the existing generic 
   rejected.set("email", "blocked@example.com");
   rejected.set("password", "0123456789");
 
-  assert.match(await redirectLocation(registerWithEmail, rejected), /error=unknown/);
+  assert.match(await redirectLocation(registerWithEmail, rejected), /error=rate_limited/);
   assert.equal(
     getRuntimeDatabase().prepare("SELECT count(*) AS count FROM users").get().count,
     8,
   );
 });
 
-test("login rate limiting rejects before a valid password can create a session", async (t) => {
+test("login email limiting rejects before a valid password can create a session", async (t) => {
   await createRuntimeFixture(t);
   await createUserWithEmail({
     email: "login-limit@example.com",
@@ -305,11 +348,63 @@ test("login rate limiting rejects before a valid password can create a session",
       loginWithEmail,
       authForm({ email: "login-limit@example.com", password: "0123456789" }),
     ),
-    /error=invalid_login/,
+    /error=rate_limited/,
   );
 });
 
-test("password-reset request limiting preserves the generic sent outcome without creating another reset", async (t) => {
+test("login allows exactly ten attempts per IP when emails vary", async (t) => {
+  await createRuntimeFixture(t);
+
+  for (let index = 0; index < 10; index += 1) {
+    assert.match(
+      await redirectLocation(
+        loginWithEmail,
+        authForm({ email: `login-ip-${index}@example.com`, password: "wrong-password" }),
+      ),
+      /error=invalid_login/,
+    );
+  }
+
+  assert.match(
+    await redirectLocation(
+      loginWithEmail,
+      authForm({ email: "login-ip-rejected@example.com", password: "wrong-password" }),
+    ),
+    /error=rate_limited/,
+  );
+});
+
+test("a blocked login IP cannot consume a victim email quota", async (t) => {
+  await createRuntimeFixture(t);
+  const networkSubject = getNetworkRateLimitSubject(new Headers());
+  const victimSubject = createEmailRateLimitSubject("victim@example.com");
+
+  for (let index = 0; index < 10; index += 1) {
+    consumeRateLimit({
+      scope: "login:ip",
+      subject: networkSubject,
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+    });
+  }
+
+  await redirectLocation(
+    loginWithEmail,
+    authForm({ email: "victim@example.com", password: "wrong-password" }),
+  );
+
+  assert.deepEqual(
+    consumeRateLimit({
+      scope: "login:email",
+      subject: victimSubject,
+      limit: 8,
+      windowMs: 15 * 60 * 1000,
+    }),
+    { allowed: true, remaining: 7, retryAfterSeconds: 0 },
+  );
+});
+
+test("password-reset email limiting returns a rate-limited outcome without creating another reset", async (t) => {
   const directory = await createRuntimeFixture(t);
   const originalDataDirectory = process.env.DATA_DIRECTORY;
   process.env.DATA_DIRECTORY = directory;
@@ -338,10 +433,32 @@ test("password-reset request limiting preserves the generic sent outcome without
       requestPasswordResetAction,
       authForm({ email: "reset-request-limit@example.com" }),
     ),
-    /forgot-password\?sent=1/,
+    /forgot-password\?error=rate_limited/,
   );
   const outbox = JSON.parse(await readFile(path.join(directory, "mail-outbox.json"), "utf8"));
   assert.equal(outbox.length, 3);
+});
+
+test("password-reset request allows exactly five attempts per IP when emails vary", async (t) => {
+  await createRuntimeFixture(t);
+
+  for (let index = 0; index < 5; index += 1) {
+    assert.match(
+      await redirectLocation(
+        requestPasswordResetAction,
+        authForm({ email: `reset-ip-${index}@example.com` }),
+      ),
+      /forgot-password\?sent=1/,
+    );
+  }
+
+  assert.match(
+    await redirectLocation(
+      requestPasswordResetAction,
+      authForm({ email: "reset-ip-rejected@example.com" }),
+    ),
+    /forgot-password\?error=rate_limited/,
+  );
 });
 
 test("password-reset submission limiting leaves a valid reset token unused", async (t) => {
@@ -371,7 +488,7 @@ test("password-reset submission limiting leaves a valid reset token unused", asy
       resetPasswordAction,
       authForm({ token: validToken, password: "new-password" }),
     ),
-    /error=invalid/,
+    /error=rate_limited/,
   );
   const row = getRuntimeDatabase()
     .prepare("SELECT password_hash, used_at FROM password_resets JOIN users ON users.id = password_resets.user_id WHERE token_hash = ?")

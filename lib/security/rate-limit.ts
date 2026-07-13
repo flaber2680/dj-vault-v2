@@ -11,12 +11,26 @@ type RateLimitRow = {
   expires_at: string;
 };
 
-type ConsumeRateLimitInput = {
+export type RateLimitBucket = {
   scope: string;
   subject: string;
   limit: number;
   windowMs: number;
+};
+
+type ConsumeRateLimitInput = RateLimitBucket & {
   now?: number;
+};
+
+type ConsumeRateLimitsInput = {
+  limits: RateLimitBucket[];
+  now?: number;
+};
+
+export type RateLimitsResult = {
+  allowed: boolean;
+  results: RateLimitResult[];
+  retryAfterSeconds: number;
 };
 
 const expiredRowsPerRequest = 100;
@@ -25,23 +39,37 @@ function rateLimitKey(scope: string, subject: string) {
   return `rate-limit:v1:${scope}:${subject}`;
 }
 
-export function consumeRateLimit({
-  scope,
-  subject,
-  limit,
-  windowMs,
+function validateBucket(bucket: RateLimitBucket) {
+  if (
+    !bucket.scope ||
+    !bucket.subject ||
+    !Number.isInteger(bucket.limit) ||
+    bucket.limit < 1 ||
+    !Number.isFinite(bucket.windowMs) ||
+    bucket.windowMs <= 0
+  ) {
+    throw new Error("INVALID_RATE_LIMIT");
+  }
+}
+
+export function consumeRateLimits({
+  limits,
   now = Date.now(),
-}: ConsumeRateLimitInput): RateLimitResult {
-  if (!scope || !subject || !Number.isInteger(limit) || limit < 1) {
+}: ConsumeRateLimitsInput): RateLimitsResult {
+  if (limits.length < 1 || !Number.isFinite(now)) {
     throw new Error("INVALID_RATE_LIMIT");
   }
 
-  if (!Number.isFinite(windowMs) || windowMs <= 0 || !Number.isFinite(now)) {
-    throw new Error("INVALID_RATE_LIMIT");
+  limits.forEach(validateBucket);
+  const buckets = limits.map((limit) => ({
+    ...limit,
+    key: rateLimitKey(limit.scope, limit.subject),
+  }));
+  if (new Set(buckets.map((bucket) => bucket.key)).size !== buckets.length) {
+    throw new Error("DUPLICATE_RATE_LIMIT");
   }
 
   const db = getRuntimeDatabase();
-  const key = rateLimitKey(scope, subject);
   const nowIso = new Date(now).toISOString();
   const run = db.transaction(() => {
     db.prepare(`
@@ -54,52 +82,92 @@ export function consumeRateLimit({
       )
     `).run(nowIso, expiredRowsPerRequest);
 
-    db.prepare(`
+    const deleteExpiredKey = db.prepare(`
       DELETE FROM rate_limits
       WHERE key = ? AND expires_at <= ?
-    `).run(key, nowIso);
-
-    const existing = db.prepare(`
+    `);
+    const getCurrent = db.prepare(`
       SELECT count, expires_at
       FROM rate_limits
       WHERE key = ?
       ORDER BY window_start DESC
       LIMIT 1
-    `).get(key) as RateLimitRow | undefined;
+    `);
 
-    if (!existing) {
-      const expiresAt = new Date(now + windowMs).toISOString();
-      db.prepare(`
-        INSERT INTO rate_limits (key, window_start, count, expires_at)
-        VALUES (?, ?, ?, ?)
-      `).run(key, nowIso, 1, expiresAt);
+    const states = buckets.map((bucket) => {
+      deleteExpiredKey.run(bucket.key, nowIso);
+      const existing = getCurrent.get(bucket.key) as RateLimitRow | undefined;
+      return { bucket, existing };
+    });
+    const blocked = states.map(({ bucket, existing }) => {
+      if (!existing || existing.count < bucket.limit) {
+        return null;
+      }
 
-      return { allowed: true, remaining: limit - 1, retryAfterSeconds: 0 };
-    }
+      return Math.max(
+        1,
+        Math.ceil((new Date(existing.expires_at).getTime() - now) / 1000),
+      );
+    });
+    const retryAfterSeconds = Math.max(0, ...blocked.filter((value) => value !== null));
 
-    if (existing.count >= limit) {
+    if (blocked.some((value) => value !== null)) {
       return {
         allowed: false,
-        remaining: 0,
-        retryAfterSeconds: Math.max(
-          1,
-          Math.ceil((new Date(existing.expires_at).getTime() - now) / 1000),
-        ),
+        retryAfterSeconds,
+        results: states.map(({ bucket, existing }, index) => ({
+          allowed: blocked[index] === null,
+          remaining:
+            blocked[index] === null
+              ? bucket.limit - (existing?.count ?? 0)
+              : 0,
+          retryAfterSeconds: blocked[index] ?? 0,
+        })),
       };
     }
 
-    db.prepare(`
+    const insert = db.prepare(`
+      INSERT INTO rate_limits (key, window_start, count, expires_at)
+      VALUES (?, ?, ?, ?)
+    `);
+    const increment = db.prepare(`
       UPDATE rate_limits
       SET count = count + 1
       WHERE key = ? AND expires_at = ?
-    `).run(key, existing.expires_at);
+    `);
+
+    const results = states.map(({ bucket, existing }) => {
+      if (!existing) {
+        insert.run(
+          bucket.key,
+          nowIso,
+          1,
+          new Date(now + bucket.windowMs).toISOString(),
+        );
+      } else {
+        increment.run(bucket.key, existing.expires_at);
+      }
+
+      return {
+        allowed: true,
+        remaining: bucket.limit - (existing?.count ?? 0) - 1,
+        retryAfterSeconds: 0,
+      };
+    });
 
     return {
       allowed: true,
-      remaining: limit - existing.count - 1,
+      results,
       retryAfterSeconds: 0,
     };
   });
 
   return run.immediate();
+}
+
+export function consumeRateLimit({
+  now,
+  ...limit
+}: ConsumeRateLimitInput): RateLimitResult {
+  return consumeRateLimits({ limits: [limit], now }).results[0];
 }

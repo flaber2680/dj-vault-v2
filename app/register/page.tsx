@@ -20,6 +20,7 @@ const errorMessages: Record<string, string> = {
   invalid_promo:
     "Такой промокод не найден или больше не активен. Проверьте код или оставьте поле пустым.",
   unknown: "Не получилось создать доступ. Попробуйте еще раз.",
+  rate_limited: "Слишком много попыток. Подождите немного и попробуйте снова.",
 };
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
