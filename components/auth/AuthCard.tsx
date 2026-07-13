@@ -7,6 +7,7 @@ type AuthCardProps = {
   action: (formData: FormData) => Promise<void>;
   error?: string;
   notice?: string;
+  returnTo?: string;
 };
 
 export function AuthCard({
@@ -16,8 +17,13 @@ export function AuthCard({
   action,
   error,
   notice,
+  returnTo,
 }: AuthCardProps) {
   const isRegister = mode === "register";
+  const switchPath = isRegister ? "/login" : "/register";
+  const switchHref = returnTo
+    ? `${switchPath}?next=${encodeURIComponent(returnTo)}`
+    : switchPath;
 
   return (
     <section className="auth-page">
@@ -39,6 +45,10 @@ export function AuthCard({
         {notice ? <p className="auth-notice">{notice}</p> : null}
 
         <form action={action} className="auth-form">
+          {returnTo ? (
+            <input name="returnTo" type="hidden" value={returnTo} />
+          ) : null}
+
           {isRegister ? (
             <label className="auth-field">
               <span>Имя</span>
@@ -103,7 +113,7 @@ export function AuthCard({
 
         <p className="auth-switch">
           {isRegister ? "Уже есть доступ?" : "Еще нет аккаунта?"}{" "}
-          <Link href={isRegister ? "/login" : "/register"}>
+          <Link href={switchHref}>
             {isRegister ? "Войти" : "Зарегистрироваться"}
           </Link>
         </p>

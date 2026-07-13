@@ -3,11 +3,13 @@ import { loginWithEmail } from "@/app/auth/actions";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
+import { normalizeAuthReturnPath } from "@/lib/auth/return-path";
 
 type LoginPageProps = {
   searchParams?: Promise<{
     error?: string;
     reset?: string;
+    next?: string;
   }>;
 };
 
@@ -17,13 +19,14 @@ const errorMessages: Record<string, string> = {
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = searchParams ? await searchParams : {};
+  const returnTo = normalizeAuthReturnPath(params.next);
   const user = await getCurrentUser();
 
   if (user) {
-    redirect(hasClubAccess(user) ? "/collections" : "/account");
+    redirect(returnTo ?? (hasClubAccess(user) ? "/collections" : "/account"));
   }
 
-  const params = searchParams ? await searchParams : {};
   const error = params.error ? errorMessages[params.error] : undefined;
   const notice =
     params.reset === "success" ? "Пароль обновлен. Теперь можно войти по почте." : undefined;
@@ -36,6 +39,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       action={loginWithEmail}
       error={error}
       notice={notice}
+      returnTo={returnTo}
     />
   );
 }

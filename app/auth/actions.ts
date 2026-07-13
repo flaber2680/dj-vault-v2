@@ -17,6 +17,7 @@ import {
   findActivePromoCode,
   recordPromoRegistration,
 } from "@/lib/referrals/store";
+import { normalizeAuthReturnPath } from "@/lib/auth/return-path";
 
 function formValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -24,8 +25,18 @@ function formValue(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function redirectWithError(path: "/login" | "/register", error: string): never {
-  redirect(`${path}?error=${encodeURIComponent(error)}`);
+function redirectWithError(
+  path: "/login" | "/register",
+  error: string,
+  returnTo?: string,
+): never {
+  const params = new URLSearchParams({ error });
+
+  if (returnTo) {
+    params.set("next", returnTo);
+  }
+
+  redirect(`${path}?${params.toString()}`);
 }
 
 function redirectToPasswordReset(error: string, token?: string): never {
@@ -43,16 +54,17 @@ export async function registerWithEmail(formData: FormData) {
   const email = formValue(formData, "email");
   const password = formValue(formData, "password");
   const promoCode = formValue(formData, "promoCode");
+  const returnTo = normalizeAuthReturnPath(formValue(formData, "returnTo"));
 
   if (!email.includes("@") || password.length < 6) {
-    redirectWithError("/register", "invalid_register");
+    redirectWithError("/register", "invalid_register", returnTo);
   }
 
   if (promoCode) {
     const activePromoCode = await findActivePromoCode(promoCode);
 
     if (!activePromoCode) {
-      redirectWithError("/register", "invalid_promo");
+      redirectWithError("/register", "invalid_promo", returnTo);
     }
   }
 
@@ -69,35 +81,36 @@ export async function registerWithEmail(formData: FormData) {
     await setSessionCookie(user.id);
   } catch (error) {
     if ((error as Error).message === "USER_EXISTS") {
-      redirectWithError("/register", "user_exists");
+      redirectWithError("/register", "user_exists", returnTo);
     }
 
     if (
       (error as Error).message === "PROMO_CODE_NOT_FOUND" ||
       (error as Error).message === "PROMO_CODE_SELF_REFERRAL"
     ) {
-      redirectWithError("/register", "invalid_promo");
+      redirectWithError("/register", "invalid_promo", returnTo);
     }
 
-    redirectWithError("/register", "unknown");
+    redirectWithError("/register", "unknown", returnTo);
   }
 
-  redirect("/account");
+  redirect(returnTo ?? "/account");
 }
 
 export async function loginWithEmail(formData: FormData) {
   const email = formValue(formData, "email");
   const password = formValue(formData, "password");
+  const returnTo = normalizeAuthReturnPath(formValue(formData, "returnTo"));
 
   const user = await findUserByEmail(email);
   const isValidPassword = await verifyPassword(password, user?.passwordHash);
 
   if (!user || !isValidPassword) {
-    redirectWithError("/login", "invalid_login");
+    redirectWithError("/login", "invalid_login", returnTo);
   }
 
   await setSessionCookie(user.id);
-  redirect(hasClubAccess(user) ? "/collections" : "/account");
+  redirect(returnTo ?? (hasClubAccess(user) ? "/collections" : "/account"));
 }
 
 export async function requestPasswordResetAction(formData: FormData) {

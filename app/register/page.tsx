@@ -3,10 +3,12 @@ import { registerWithEmail } from "@/app/auth/actions";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
+import { normalizeAuthReturnPath } from "@/lib/auth/return-path";
 
 type RegisterPageProps = {
   searchParams?: Promise<{
     error?: string;
+    next?: string;
   }>;
 };
 
@@ -21,13 +23,14 @@ const errorMessages: Record<string, string> = {
 };
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+  const params = searchParams ? await searchParams : {};
+  const returnTo = normalizeAuthReturnPath(params.next);
   const user = await getCurrentUser();
 
   if (user) {
-    redirect(hasClubAccess(user) ? "/collections" : "/account");
+    redirect(returnTo ?? (hasClubAccess(user) ? "/collections" : "/account"));
   }
 
-  const params = searchParams ? await searchParams : {};
   const error = params.error ? errorMessages[params.error] : undefined;
 
   return (
@@ -37,6 +40,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       description="Зарегистрируйтесь, чтобы открыть демо-доступ к закрытым DJ-подборкам."
       action={registerWithEmail}
       error={error}
+      returnTo={returnTo}
     />
   );
 }

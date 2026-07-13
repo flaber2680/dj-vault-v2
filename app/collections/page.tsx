@@ -9,6 +9,7 @@ import {
 } from "@/lib/content/collections";
 import { getRemainingDownloadCount } from "@/lib/downloads/store";
 import { formatTrackCount } from "@/lib/content/track-count";
+import { getDemoAccessState } from "@/lib/content/demo-access";
 
 type CollectionsPageProps = {
   searchParams?: Promise<{
@@ -24,6 +25,8 @@ const downloadMessages: Record<string, string> = {
 };
 
 const DEMO_VISIBLE_GENRE_LIMIT = 6;
+const DEMO_RETURN_PATH = "/collections#demo-download";
+const DEMO_REGISTER_PATH = `/register?next=${encodeURIComponent(DEMO_RETURN_PATH)}`;
 
 function parseGenreTips(genres: string) {
   return genres
@@ -55,6 +58,11 @@ export default async function CollectionsPage({
   const demoCollection = await getDemoCollection();
   const params = searchParams ? await searchParams : {};
   const hasPaidPlan = user ? hasClubAccess(user) : false;
+  const demoAccessState = getDemoAccessState({
+    hasPaidPlan,
+    hasUser: Boolean(user),
+    hasArchive: Boolean(demoCollection.s3Key),
+  });
   const activeDownloadMessage =
     params.download && params.collection
       ? downloadMessages[params.download]
@@ -104,7 +112,7 @@ export default async function CollectionsPage({
           </p>
 
           {!hasPaidPlan ? (
-            <div className="collections-actions" id="demo-download">
+            <div className="collections-actions">
               <a className="button-main" href="/pricing">
                 <span className="button-label">Вступить в клуб</span>
               </a>
@@ -113,15 +121,15 @@ export default async function CollectionsPage({
         </div>
 
         <div className="collections-list">
-          {!hasPaidPlan ? (
+          {demoAccessState !== "hidden" ? (
             <article
-              className="collection-card collection-card-demo-split"
-              id={`collection-${demoCollection.number}`}
+              className="collection-card collection-card-demo-split collection-demo-featured"
+              id="demo-download"
               data-reveal
             >
               <div className="demo-card-copy">
                 <div className="demo-card-top">
-                  <p>DJ Vault / Demo drop</p>
+                  <p>Бесплатный выпуск</p>
                   <div className="demo-card-top-meta">
                     <span>{formatTrackCount(demoCollection.tracks)}</span>
                     <span>{demoCollection.size}</span>
@@ -129,7 +137,7 @@ export default async function CollectionsPage({
                   </div>
                 </div>
 
-                <h2>Демо-подборка</h2>
+                <h2>Сначала послушайте отбор</h2>
 
                 <div
                   className="demo-card-tip-strip"
@@ -173,21 +181,33 @@ export default async function CollectionsPage({
                 ) : null}
 
                 <div className="collection-card-action demo-card-action">
-                  {demoCollection.s3Key && demoDownloadsLeft !== null ? (
+                  {demoAccessState === "download" && demoDownloadsLeft !== null ? (
                     <CollectionDownloadAction
                       collectionNumber={demoCollection.number}
                       initialRemaining={demoDownloadsLeft}
                       label="Скачать демо"
                       limit={demoCollection.downloadLimit}
                     />
+                  ) : demoAccessState === "register" ? (
+                    <a className="button-main" href={DEMO_REGISTER_PATH}>
+                      <span className="button-label">
+                        Зарегистрироваться и скачать демо
+                      </span>
+                    </a>
                   ) : (
                     <span
                       className="button-outline button-disabled"
                       aria-disabled="true"
                     >
-                      <span className="button-label">Демо скоро появится</span>
+                      <span className="button-label">Демо пока недоступно</span>
                     </span>
                   )}
+
+                  {demoAccessState === "register" ? (
+                    <p className="collection-demo-access-note">
+                      Бесплатно после регистрации. Оплата не нужна.
+                    </p>
+                  ) : null}
 
                   {params.collection === demoCollection.number &&
                   activeDownloadMessage ? (
@@ -221,7 +241,7 @@ export default async function CollectionsPage({
 
               return (
                 <article
-                  className="collection-card collection-card-demo-split"
+                  className="collection-card collection-card-demo-split collection-release-card"
                   id={`collection-${collection.number}`}
                   key={collection.number}
                   data-reveal
