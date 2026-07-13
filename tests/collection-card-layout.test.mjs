@@ -64,3 +64,24 @@ test("keeps the download action as a POST form with the existing iframe and acce
   assert.match(source, /aria-label=\{formatDownloadsLeft\(remaining, limit\)\}/);
   assert.match(source, /className="button-outline collection-download-button"/);
 });
+
+test("shows a localized nonempty error when download creation is rate limited", async () => {
+  const source = await readFile(
+    new URL("../components/collections/CollectionDownloadAction.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /error\?: "limit" \| "not_configured" \| "rate_limit" \| "storage"/,
+  );
+  assert.match(
+    source,
+    /rate_limit: "Слишком много попыток\. Попробуйте позже\."/,
+  );
+  assert.match(
+    source,
+    /if \(!response\.ok \|\| !result\.downloadUrl\)[\s\S]*?setError\([\s\S]*?result\.error \? errorMessages\[result\.error\]/,
+  );
+  assert.match(source, /\{error \? <p className="collection-download-message">\{error\}<\/p> : null\}/);
+});

@@ -4,11 +4,12 @@ import { type FormEvent, useState } from "react";
 
 type DownloadResponse = {
   downloadUrl?: string;
-  error?: "limit" | "not_configured" | "storage";
+  error?: "limit" | "not_configured" | "rate_limit" | "storage";
   remaining?: number;
 };
 
 const errorMessages: Record<NonNullable<DownloadResponse["error"]>, string> = {
+  rate_limit: "Слишком много попыток. Попробуйте позже.",
   limit: "Лимит скачивания для этого архива исчерпан.",
   not_configured: "Ссылка на архив пока не подключена.",
   storage: "Не удалось подготовить временную ссылку. Напишите в поддержку.",

@@ -41,6 +41,16 @@ const legacyFiles = {
       isActive: true,
       downloadLimit: 2,
     },
+    {
+      number: "026",
+      date: "1 July 2026",
+      size: "4 GB",
+      genres: "House",
+      tracks: "100 tracks",
+      s3Key: "archives/026.zip",
+      isActive: false,
+      downloadLimit: 3,
+    },
   ])}\n`,
   "downloads.json": "[]\n",
   "password-resets.json": "[]\n",
@@ -66,9 +76,9 @@ async function createRuntimeFixture(t) {
   });
 }
 
-function configureS3(t) {
+function configureS3(t, endpoint = "https://storage.example.test") {
   const values = {
-    S3_ENDPOINT: "https://storage.example.test",
+    S3_ENDPOINT: endpoint,
     S3_REGION: "ru-1",
     S3_BUCKET: "dj-vault",
     S3_ACCESS_KEY: "test-access-key",
@@ -181,6 +191,50 @@ test("GET returns 405 and leaves the download count unchanged", async (t) => {
   assert.equal(response.headers.get("Allow"), "POST");
   assert.equal((await getDownloadRecord(user.id, "027"))?.downloadCount, 1);
   assert.deepEqual(s3Calls, []);
+});
+
+test("inactive collection POST redirects to collections before S3 or accounting", async (t) => {
+  await createRuntimeFixture(t);
+  configureS3(t, "invalid-s3-endpoint");
+  const s3Calls = mockS3Metadata(t);
+  const user = await createUser("inactive-download@example.com");
+  grantClubAccess(user);
+  await registerDownloadAttempt({
+    archiveId: "026",
+    ipAddress: "192.0.2.12",
+    limit: 3,
+    userAgent: "Download route test",
+    userId: user.id,
+  });
+
+  const response = await invokeDownload({ method: "POST", number: "026", user });
+
+  assert.equal(response.status, 307);
+  assert.equal(response.headers.get("location"), "https://djvault.ru/collections");
+  assert.deepEqual(s3Calls, []);
+  assert.equal((await getDownloadRecord(user.id, "026"))?.downloadCount, 1);
+});
+
+test("unknown collection POST redirects to collections before S3 or accounting", async (t) => {
+  await createRuntimeFixture(t);
+  configureS3(t, "invalid-s3-endpoint");
+  const s3Calls = mockS3Metadata(t);
+  const user = await createUser("unknown-download@example.com");
+  grantClubAccess(user);
+  await registerDownloadAttempt({
+    archiveId: "missing",
+    ipAddress: "192.0.2.13",
+    limit: 3,
+    userAgent: "Download route test",
+    userId: user.id,
+  });
+
+  const response = await invokeDownload({ method: "POST", number: "missing", user });
+
+  assert.equal(response.status, 307);
+  assert.equal(response.headers.get("location"), "https://djvault.ru/collections");
+  assert.deepEqual(s3Calls, []);
+  assert.equal((await getDownloadRecord(user.id, "missing"))?.downloadCount, 1);
 });
 
 test("authorized POST validates metadata then increments exactly once", async (t) => {
