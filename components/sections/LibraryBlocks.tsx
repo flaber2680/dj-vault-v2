@@ -319,8 +319,11 @@ export async function LibraryBlocks() {
                 data-reveal
               >
                 <span>Выпуск #{archive.number}</span>
-                <strong>{archive.date}</strong>
-                <p>{formatTrackCount(archive.tracks)} · {archive.size}</p>
+                <span className="archive-row-meta">
+                  <span>{formatTrackCount(archive.tracks)}</span>
+                  <span>{archive.size}</span>
+                  <time>{archive.date}</time>
+                </span>
                 <span className="archive-row-arrow" aria-hidden="true">→</span>
               </Link>
             ))}
