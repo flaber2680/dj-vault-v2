@@ -3576,6 +3576,10 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
     padding: 16px;
   }
 
+  .collection-demo-featured {
+    padding: 16px;
+  }
+
   .collection-demo-featured h2,
   .collection-release-card h2 {
     font-size: 26px;
@@ -3599,7 +3603,8 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   }
 
   .collection-demo-featured .demo-card-action {
-    margin-top: 28px;
+    margin-top: 0;
+    padding-top: 20px;
   }
 
   .collection-demo-featured .button-main {

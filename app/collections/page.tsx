@@ -137,7 +137,7 @@ export default async function CollectionsPage({
                 <div className="collection-release-meta">
                   <span>{formatTrackCount(demoCollection.tracks)}</span>
                   <span>{demoCollection.size}</span>
-                  <span>{demoCollection.date}</span>
+                  <time className="collection-release-date">{demoCollection.date}</time>
                 </div>
 
                 <h2>Демо-подборка</h2>
