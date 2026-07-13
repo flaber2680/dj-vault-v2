@@ -89,3 +89,58 @@ test("initializes the complete schema idempotently", async (t) => {
     1,
   );
 });
+
+test("preserves a legacy activation without inventing payment facts", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "dj-vault-schema-"));
+  const databasePath = path.join(directory, "dj-vault.sqlite");
+  const db = openDatabase(databasePath);
+
+  t.after(async () => {
+    closeDatabaseForTests();
+    await rm(directory, { force: true, recursive: true });
+  });
+
+  initializeDatabase(db);
+  db.prepare(`
+    INSERT INTO users (id, email, name, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    "legacy-user",
+    "legacy@example.com",
+    "Legacy User",
+    "2026-07-13T00:00:00.000Z",
+    "2026-07-13T00:00:00.000Z",
+  );
+
+  db.prepare(`
+    INSERT INTO activated_payments (id, provider_payment_id, user_id)
+    VALUES (?, ?, ?)
+  `).run("legacy-payment", "legacy-payment", "legacy-user");
+
+  assert.deepEqual(
+    db.prepare(`
+      SELECT
+        id,
+        provider_payment_id,
+        user_id,
+        provider,
+        amount,
+        currency,
+        status,
+        created_at,
+        updated_at
+      FROM activated_payments
+    `).get(),
+    {
+      id: "legacy-payment",
+      provider_payment_id: "legacy-payment",
+      user_id: "legacy-user",
+      provider: null,
+      amount: null,
+      currency: null,
+      status: null,
+      created_at: null,
+      updated_at: null,
+    },
+  );
+});

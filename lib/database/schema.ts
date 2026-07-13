@@ -32,7 +32,7 @@ const migrations: Migration[] = [
 
       CREATE TABLE activated_payments (
         id TEXT PRIMARY KEY,
-        provider TEXT NOT NULL,
+        provider TEXT,
         provider_payment_id TEXT UNIQUE,
         provider_status TEXT,
         confirmation_url TEXT,
@@ -42,14 +42,14 @@ const migrations: Migration[] = [
         plan_id TEXT,
         activation_plan_id TEXT,
         method TEXT,
-        amount REAL NOT NULL,
-        currency TEXT NOT NULL,
-        status TEXT NOT NULL,
+        amount REAL,
+        currency TEXT,
+        status TEXT,
         paid_at TEXT,
         activated_at TEXT,
         error TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        created_at TEXT,
+        updated_at TEXT
       );
 
       CREATE TABLE promo_codes (
