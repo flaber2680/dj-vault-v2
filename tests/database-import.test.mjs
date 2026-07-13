@@ -29,7 +29,7 @@ const fixtureData = {
       name: "Owner",
       plan: "premium",
       planExpiresAt: "2027-01-02T03:04:05.000Z",
-      activatedPaymentIds: ["payment-complete", "activation-only", "activation-only"],
+      activatedPaymentIds: ["activation-only", "activation-only"],
       providers: ["email"],
       passwordHash: "password-hash-must-stay-secret",
       avatarUrl: "https://cdn.example/owner.png",
@@ -41,6 +41,7 @@ const fixtureData = {
       email: "referred@example.com",
       name: "Referred",
       plan: "club",
+      activatedPaymentIds: ["payment-complete"],
       providers: ["email"],
       createdAt: "2026-03-01T01:00:00.000Z",
       updatedAt: "2026-03-01T01:00:00.000Z",
@@ -53,7 +54,7 @@ const fixtureData = {
       providerPaymentId: "provider-payment-42",
       providerStatus: "succeeded",
       confirmationUrl: "https://payments.example/confirmation-secret",
-      userId: "user-owner",
+      userId: "user-referred",
       packageId: "days-90",
       durationDays: 90,
       planId: "pro",
@@ -272,7 +273,7 @@ test("imports every legacy store once without changing source files", async (t) 
         provider_payment_id: "provider-payment-42",
         provider_status: "succeeded",
         confirmation_url: "https://payments.example/confirmation-secret",
-        user_id: "user-owner",
+        user_id: "user-referred",
         package_id: "days-90",
         duration_days: 90,
         plan_id: "pro",
@@ -422,6 +423,72 @@ test("conflicting normalized emails roll back the complete import", async (t) =>
   }
 });
 
+test("cross-user referral payment attribution aborts the import", async (t) => {
+  const { db, directory } = await createTestDatabase(t);
+  await writeFixtures(directory, {
+    "promo-codes.json": {
+      ...fixtureData["promo-codes.json"],
+      referrals: [
+        {
+          ...fixtureData["promo-codes.json"].referrals[0],
+          paymentId: "activation-only",
+        },
+      ],
+    },
+  });
+
+  assert.throws(
+    () => importLegacyData(db, directory),
+    /referral payment ownership/i,
+  );
+  for (const table of [
+    "users",
+    "user_providers",
+    "activated_payments",
+    "promo_codes",
+    "referrals",
+    "collections",
+    "download_records",
+    "download_events",
+    "password_resets",
+    "data_imports",
+  ]) {
+    assert.equal(count(db, table), 0, `${table} should be empty after rollback`);
+  }
+});
+
+test("self-referral aborts the import", async (t) => {
+  const { db, directory } = await createTestDatabase(t);
+  await writeFixtures(directory, {
+    "promo-codes.json": {
+      ...fixtureData["promo-codes.json"],
+      referrals: [
+        {
+          ...fixtureData["promo-codes.json"].referrals[0],
+          referredUserId: "user-owner",
+          paymentId: "activation-only",
+        },
+      ],
+    },
+  });
+
+  assert.throws(() => importLegacyData(db, directory), /self-referral/i);
+  for (const table of [
+    "users",
+    "user_providers",
+    "activated_payments",
+    "promo_codes",
+    "referrals",
+    "collections",
+    "download_records",
+    "download_events",
+    "password_resets",
+    "data_imports",
+  ]) {
+    assert.equal(count(db, table), 0, `${table} should be empty after rollback`);
+  }
+});
+
 test("treats absent legacy files as empty datasets", async (t) => {
   const { db, directory } = await createTestDatabase(t);
 
@@ -534,4 +601,34 @@ test("verification CLI is secret-safe and exits nonzero on mismatch", async (t) 
   assert.match(mismatch.stdout, /passwordResets\s+json=1\s+sqlite=0\s+MISMATCH/i);
   assert.match(mismatch.stdout, /conflicts:\s+1/i);
   assert.equal(mismatchOutput.includes("reset-hash-must-stay-secret"), false);
+});
+
+test("verification CLI detects altered download events without exposing them", async (t) => {
+  const { databasePath, db, directory } = await createTestDatabase(t);
+  await writeFixtures(directory);
+  importLegacyData(db, directory);
+  db.prepare("UPDATE download_events SET user_agent = ? WHERE id = 1").run(
+    "tampered-personal-event-value",
+  );
+  closeDatabaseForTests();
+
+  const result = spawnSync(
+    process.execPath,
+    [
+      "scripts/verify-data-migration.mjs",
+      "--data-directory",
+      directory,
+      "--database",
+      databasePath,
+    ],
+    { cwd: process.cwd(), encoding: "utf8" },
+  );
+  const output = `${result.stdout}\n${result.stderr}`;
+
+  assert.notEqual(result.status, 0, output);
+  assert.match(result.stdout, /downloadEvents\s+json=2\s+sqlite=2\s+OK/i);
+  assert.match(result.stdout, /conflicts:\s+1/i);
+  assert.equal(output.includes("tampered-personal-event-value"), false);
+  assert.equal(output.includes("192.0.2.10"), false);
+  assert.equal(output.includes("Legacy Browser 1"), false);
 });

@@ -385,10 +385,12 @@ function validateRelationships(data: LegacyData): void {
     }
   }
 
-  const paymentIds = new Set([
-    ...data.payments.map((payment) => payment.id),
-    ...activationOwners.keys(),
-  ]);
+  const paymentOwners = new Map(
+    data.payments.map((payment) => [payment.id, payment.userId]),
+  );
+  for (const [paymentId, userId] of activationOwners) {
+    paymentOwners.set(paymentId, userId);
+  }
   const effectiveProviderIds = [
     ...data.payments.map((payment) => payment.providerPaymentId).filter(Boolean),
     ...[...activationOwners.keys()].filter(
@@ -416,12 +418,20 @@ function validateRelationships(data: LegacyData): void {
   );
   for (const referral of data.referralData.referrals) {
     const code = codesById.get(referral.promoCodeId);
+    if (referral.ownerUserId === referral.referredUserId) {
+      throw new Error(`Conflicting legacy self-referral for ${referral.id}`);
+    }
+    if (
+      referral.paymentId !== undefined &&
+      paymentOwners.get(referral.paymentId) !== referral.referredUserId
+    ) {
+      throw new Error(`Conflicting legacy referral payment ownership for ${referral.id}`);
+    }
     if (
       !code ||
       !usersById.has(referral.referredUserId) ||
       referral.ownerUserId !== code.ownerUserId ||
-      normalizePromoCode(referral.code) !== normalizePromoCode(code.code) ||
-      (referral.paymentId !== undefined && !paymentIds.has(referral.paymentId))
+      normalizePromoCode(referral.code) !== normalizePromoCode(code.code)
     ) {
       throw new Error(`Conflicting legacy referral ownership for ${referral.id}`);
     }

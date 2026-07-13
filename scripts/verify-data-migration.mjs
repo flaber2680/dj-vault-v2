@@ -62,6 +62,10 @@ function columnValues(db, query, column = "id") {
   return db.prepare(query).all().map((row) => String(row[column]));
 }
 
+function eventValue(userId, archiveId, downloadedAt, ipAddress, userAgent) {
+  return JSON.stringify([userId, archiveId, downloadedAt, ipAddress, userAgent]);
+}
+
 function identityChecks(db, data) {
   const expectedPaymentIds = new Set([
     ...data.payments.map((payment) => payment.id),
@@ -103,6 +107,32 @@ function identityChecks(db, data) {
         "SELECT user_id || char(0) || archive_id AS id FROM download_records",
       ),
       data.downloads.map((record) => `${record.userId}\0${record.archiveId}`),
+    ],
+    [
+      "downloadEvents",
+      db.prepare(`
+        SELECT user_id, archive_id, downloaded_at, ip_address, user_agent
+        FROM download_events
+      `).all().map((row) =>
+        eventValue(
+          row.user_id,
+          row.archive_id,
+          row.downloaded_at,
+          row.ip_address,
+          row.user_agent,
+        ),
+      ),
+      data.downloads.flatMap((record) =>
+        record.events.map((event) =>
+          eventValue(
+            record.userId,
+            record.archiveId,
+            event.downloadedAt,
+            event.ipAddress,
+            event.userAgent,
+          ),
+        ),
+      ),
     ],
     [
       "passwordResets",
