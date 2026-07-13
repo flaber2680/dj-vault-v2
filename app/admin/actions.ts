@@ -45,7 +45,7 @@ export async function saveCollectionAction(formData: FormData) {
     !tracks.trim() ||
     !genres.trim()
   ) {
-    redirect("/admin?error=required");
+    redirect("/admin?section=collections&collection=new&error=required");
   }
 
   const collection = await saveCollection({
@@ -62,7 +62,7 @@ export async function saveCollectionAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/collections");
-  redirect(`/admin?saved=${encodeURIComponent(collection.number)}`);
+  redirect(`/admin?section=collections&saved=${encodeURIComponent(collection.number)}`);
 }
 
 export async function resetDownloadLimitAction(formData: FormData) {
@@ -80,12 +80,12 @@ export async function resetDownloadLimitAction(formData: FormData) {
   const archiveId = getField(formData, "archiveId");
 
   if (!userId.trim() || !archiveId.trim()) {
-    redirect("/admin?error=reset_required");
+    redirect("/admin?section=users&error=reset_required");
   }
 
   await resetDownloadLimit(userId, archiveId);
   revalidatePath("/admin");
-  redirect(`/admin?reset=${encodeURIComponent(archiveId)}`);
+  redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&reset=${encodeURIComponent(archiveId)}`);
 }
 
 export async function createPromoCodeAction(formData: FormData) {
@@ -103,7 +103,7 @@ export async function createPromoCodeAction(formData: FormData) {
   const code = getField(formData, "code");
 
   if (!userId.trim() || !code.trim()) {
-    redirect("/admin?promo_error=required#users");
+    redirect("/admin?section=users&promo_error=required");
   }
 
   try {
@@ -113,13 +113,13 @@ export async function createPromoCodeAction(formData: FormData) {
     });
 
     revalidatePath("/admin");
-    redirect(`/admin?promo=${encodeURIComponent(promoCode.code)}#promo-codes`);
+    redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&promo=${encodeURIComponent(promoCode.code)}`);
   } catch (error) {
     if ((error as Error).message === "PROMO_CODE_EXISTS") {
-      redirect("/admin?promo_error=exists#users");
+      redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&promo_error=exists`);
     }
 
-    redirect("/admin?promo_error=unknown#users");
+    redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&promo_error=unknown`);
   }
 }
 
@@ -140,13 +140,13 @@ export async function updateUserAccessAction(formData: FormData) {
   const days = daysValue ? Number(daysValue) : 0;
 
   if (!userId || (accessPlan !== "free" && accessPlan !== "club")) {
-    redirect("/admin?access_error=required#users");
+    redirect("/admin?section=users&access_error=required");
   }
 
   const targetUser = await findUserById(userId);
 
   if (!targetUser) {
-    redirect("/admin?access_error=not_found#users");
+    redirect("/admin?section=users&access_error=not_found");
   }
 
   let change: ReturnType<typeof calculateAdminAccessChange>;
@@ -162,14 +162,14 @@ export async function updateUserAccessAction(formData: FormData) {
     const code = (error as Error).message;
 
     if (code === "ACCESS_DAYS_REQUIRED") {
-      redirect("/admin?access_error=days_required#users");
+      redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&access_error=days_required`);
     }
 
     if (code === "ACCESS_DAYS_NOT_ALLOWED") {
-      redirect("/admin?access_error=days_not_allowed#users");
+      redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&access_error=days_not_allowed`);
     }
 
-    redirect("/admin?access_error=invalid_days#users");
+    redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&access_error=invalid_days`);
   }
 
   await updateUserPlan(
@@ -181,5 +181,5 @@ export async function updateUserAccessAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/account");
   revalidatePath("/collections");
-  redirect(`/admin?access_updated=${encodeURIComponent(targetUser.email)}#users`);
+  redirect(`/admin?section=users&user=${encodeURIComponent(targetUser.id)}&access_updated=${encodeURIComponent(targetUser.email)}`);
 }
