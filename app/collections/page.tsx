@@ -273,10 +273,13 @@ export default async function CollectionsPage({
                         <div className="collection-release-meta">
                           <span>{formatTrackCount(collection.tracks)}</span>
                           <span>{collection.size}</span>
-                          <span>{collection.date}</span>
+                          <time className="collection-release-date">{collection.date}</time>
                         </div>
 
-                        <h2>Подборка #{collection.number}</h2>
+                        <h2 className="collection-release-title">
+                          <span>Подборка</span>
+                          <strong>#{collection.number}</strong>
+                        </h2>
 
                         <div
                           className="demo-card-tip-strip"

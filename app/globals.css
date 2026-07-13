@@ -1299,13 +1299,12 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   margin-top: clamp(44px, 5vw, 76px);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 48px;
+  gap: 40px;
 }
 
 .collection-month-head {
-  padding-block: 20px;
+  padding-block: 14px;
   border-top: 1px solid rgba(255, 255, 255, .38);
-  border-bottom: 1px solid rgba(255, 255, 255, .16);
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1329,7 +1328,8 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 }
 
 .collection-month-head span,
-.collection-release-meta span {
+.collection-release-meta span,
+.collection-release-meta time {
   color: rgba(255, 255, 255, .62);
   font-size: 11px;
   font-weight: 700;
@@ -1340,7 +1340,7 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 .collection-month-group {
   min-width: 0;
   display: grid;
-  gap: 16px;
+  gap: 10px;
 }
 
 .collection-month-grid {
@@ -1498,12 +1498,33 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   line-height: .96;
 }
 
+.collection-release-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+
+.collection-release-title span {
+  color: rgba(255, 255, 255, .78);
+}
+
+.collection-release-title strong {
+  color: #fff;
+  font: inherit;
+}
+
 .collection-release-meta {
   width: 100%;
   margin-bottom: 32px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px 14px;
+}
+
+.collection-release-meta .collection-release-date {
+  margin-left: auto;
+  color: rgba(255, 255, 255, .86);
 }
 
 .demo-card-top {
@@ -3526,14 +3547,14 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 
 @media (max-width: 600px) {
   .collections-list {
-    gap: 36px;
+    gap: 28px;
   }
 
   .collection-month-head {
-    padding-block: 16px;
+    padding-block: 12px;
     align-items: flex-start;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
   }
 
   .collection-month-head h2 {
@@ -3551,17 +3572,22 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
     padding: 20px;
   }
 
+  .collection-release-card {
+    padding: 16px;
+  }
+
   .collection-demo-featured h2,
   .collection-release-card h2 {
-    font-size: 28px;
+    font-size: 26px;
   }
 
   .collection-release-meta {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
+    gap: 7px 12px;
   }
 
   .demo-card-tip-strip {
-    margin-top: 22px;
+    margin-top: 18px;
   }
 
   .demo-card-description {
@@ -3569,7 +3595,7 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   }
 
   .collection-release-card .demo-card-action {
-    padding-top: 28px;
+    padding-top: 20px;
   }
 
   .collection-demo-featured .demo-card-action {
