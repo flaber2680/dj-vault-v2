@@ -16,7 +16,7 @@ import {
   requestPasswordResetAction,
   resetPasswordAction,
 } from "../app/auth/actions.ts";
-import { GET as getDownload } from "../app/api/download/[number]/route.ts";
+import { POST as postDownload } from "../app/api/download/[number]/route.ts";
 import { POST as postYooKassaWebhook } from "../app/api/payments/yookassa/route.ts";
 import { createUserWithEmail, verifyPassword } from "../lib/auth/store.ts";
 import { createSessionToken, SESSION_COOKIE } from "../lib/auth/session.ts";
@@ -544,8 +544,10 @@ test("download creation returns a generic retry response before its existing S3 
   const response = await inRequestScope(
     `${SESSION_COOKIE}=${createSessionToken(user.id, 0)}`,
     () =>
-      getDownload(
-        new NextRequest("https://djvault.ru/api/download/demo?format=json"),
+      postDownload(
+        new NextRequest("https://djvault.ru/api/download/demo?format=json", {
+          method: "POST",
+        }),
         { params: Promise.resolve({ number: "demo" }) },
       ),
   );

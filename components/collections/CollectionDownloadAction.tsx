@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 
 type DownloadResponse = {
   downloadUrl?: string;
@@ -48,6 +48,7 @@ export function CollectionDownloadAction({
     try {
       const response = await fetch(
         `/api/download/${encodeURIComponent(collectionNumber)}?format=json`,
+        { method: "POST" },
       );
       const result = (await response.json()) as DownloadResponse;
 
@@ -90,6 +91,11 @@ export function CollectionDownloadAction({
     }
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void startDownload();
+  }
+
   return (
     <>
       {remaining <= 0 ? (
@@ -97,16 +103,21 @@ export function CollectionDownloadAction({
           <span className="button-label">Лимит исчерпан</span>
         </span>
       ) : (
-        <button
-          className="button-outline collection-download-button"
-          disabled={isLoading}
-          onClick={startDownload}
-          type="button"
+        <form
+          action={`/api/download/${encodeURIComponent(collectionNumber)}`}
+          method="post"
+          onSubmit={handleSubmit}
         >
-          <span className="button-label">
+          <button
+            className="button-outline collection-download-button"
+            disabled={isLoading}
+            type="submit"
+          >
+            <span className="button-label">
             {isLoading ? "Подготовка…" : label}
-          </span>
-        </button>
+            </span>
+          </button>
+        </form>
       )}
 
       {remaining > 0 ? (

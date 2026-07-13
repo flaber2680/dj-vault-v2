@@ -72,7 +72,14 @@ function serializeError(error: unknown) {
   return error;
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET() {
+  return NextResponse.json(
+    { error: "method_not_allowed" },
+    { status: 405, headers: { Allow: "POST" } },
+  );
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
   const wantsJson = request.nextUrl.searchParams.get("format") === "json";
   const { number } = await context.params;
   const collection = await findCollectionByNumber(number);
@@ -117,12 +124,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return redirectToCollections(request, "not_configured", collection.number);
   }
 
-  let signedUrl: string;
+  if (!getS3ConfigStatus().configured) {
+    if (wantsJson) {
+      return NextResponse.json({ error: "not_configured" }, { status: 409 });
+    }
+    return redirectToCollections(request, "not_configured", collection.number);
+  }
 
   try {
-    signedUrl = createSignedDownloadUrl(collection.s3Key);
+    await getS3ObjectMetadata(collection.s3Key);
   } catch (error) {
-    console.error("[download] failed to create S3 signed URL", {
+    console.error("[download] S3 metadata check failed", {
       collectionNumber: collection.number,
       s3Key: collection.s3Key,
       s3: getS3ConfigStatus(),
@@ -135,11 +147,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return redirectToCollections(request, "storage", collection.number);
   }
 
+  let signedUrl: string;
+
   try {
-    await getS3ObjectMetadata(collection.s3Key);
+    signedUrl = createSignedDownloadUrl(collection.s3Key);
   } catch (error) {
     console.error(
-      "[download] S3 metadata check failed; redirecting to signed URL anyway",
+      "[download] failed to create S3 signed URL",
       {
         collectionNumber: collection.number,
         s3Key: collection.s3Key,
@@ -147,6 +161,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
         error: serializeError(error),
       },
     );
+
+    if (wantsJson) {
+      return NextResponse.json({ error: "storage" }, { status: 500 });
+    }
+    return redirectToCollections(request, "storage", collection.number);
   }
 
   const download = await registerDownloadAttempt({
