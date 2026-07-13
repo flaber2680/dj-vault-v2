@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import { getCollections, latestGenres } from "@/lib/content/collections";
 import { accessPackageList } from "@/lib/content/plans";
+import { formatTrackCount } from "@/lib/content/track-count";
 
 const ordinarySteps = [
   "Открыть DJ Pool",
@@ -319,9 +320,8 @@ export async function LibraryBlocks() {
               >
                 <span>Выпуск #{archive.number}</span>
                 <strong>{archive.date}</strong>
-                <p>
-                  {archive.size} · {archive.genres}
-                </p>
+                <p>{formatTrackCount(archive.tracks)} · {archive.size}</p>
+                <span className="archive-row-arrow" aria-hidden="true">→</span>
               </Link>
             ))}
           </div>

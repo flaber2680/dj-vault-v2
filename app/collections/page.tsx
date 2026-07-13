@@ -134,16 +134,13 @@ export default async function CollectionsPage({
               data-reveal
             >
               <div className="demo-card-copy">
-                <div className="demo-card-top">
-                  <p>Бесплатный выпуск</p>
-                  <div className="demo-card-top-meta">
-                    <span>{formatTrackCount(demoCollection.tracks)}</span>
-                    <span>{demoCollection.size}</span>
-                    <span>{demoCollection.date}</span>
-                  </div>
+                <div className="collection-release-meta">
+                  <span>{formatTrackCount(demoCollection.tracks)}</span>
+                  <span>{demoCollection.size}</span>
+                  <span>{demoCollection.date}</span>
                 </div>
 
-                <h2>Сначала послушайте отбор</h2>
+                <h2>Демо-подборка</h2>
 
                 <div
                   className="demo-card-tip-strip"
@@ -237,20 +234,6 @@ export default async function CollectionsPage({
             </div>
           ) : null}
 
-          {archive.releaseCount > 0 ? (
-            <div className="collections-archive-summary" data-reveal>
-              <div>
-                <span>
-                  {formatArchiveTrackTotal(
-                    archive.totalTracks,
-                    archive.isApproximate,
-                  )}
-                </span>
-                <span>{formatReleaseCount(archive.releaseCount)}</span>
-              </div>
-            </div>
-          ) : null}
-
           {archive.groups.map((group) => (
             <section className="collection-month-group" key={group.key}>
               <header className="collection-month-head" data-reveal>
@@ -296,7 +279,7 @@ export default async function CollectionsPage({
                         <h2>Подборка #{collection.number}</h2>
 
                         <div
-                          className="demo-card-tip-strip collection-release-genres"
+                          className="demo-card-tip-strip"
                           aria-label={`Жанры подборки ${collection.number}`}
                         >
                           {visibleGenreTips.map((tip) => (
@@ -314,8 +297,7 @@ export default async function CollectionsPage({
                               tabIndex={0}
                               aria-label={`Еще ${hiddenGenreTips.length} скрытых стилей`}
                             >
-                              <span>Еще</span>
-                              <strong>+{hiddenGenreTips.length}</strong>
+                              +{hiddenGenreTips.length}
                               <span
                                 className="demo-card-more-popover"
                                 role="tooltip"
