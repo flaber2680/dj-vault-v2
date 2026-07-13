@@ -34,6 +34,15 @@ The merchant is registered as self-employed. DJ Vault does not send a 54-FZ `rec
 - `NEXT_PUBLIC_APP_URL=https://djvault.ru`.
 - YooKassa notifications subscribe to `payment.succeeded` and `payment.canceled`.
 
+## Live Smoke Package
+
+- A non-public package `smoke-100` grants one day for 100 RUB.
+- It never appears in public pricing or package lists.
+- Checkout accepts it only when `PAYMENT_SMOKE_TEST_ENABLED=true` and the authenticated user matches `ADMIN_EMAIL`.
+- Payment activation always recognizes an already-created smoke payment even after the feature flag is disabled.
+- Smoke payments do not create referral conversions.
+- After the successful end-to-end check, disable the environment flag and restart the app.
+
 ## Data Compatibility
 
 Add an optional `activatedPaymentIds` array to stored users. Existing user records remain valid and require no eager migration. Public user/session data does not expose this field.
