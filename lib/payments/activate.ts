@@ -106,10 +106,18 @@ export async function activateYooKassaPayment(
       status: payment.status,
     };
   } catch (error) {
+    const errorCode = error instanceof Error ? error.message : "";
+    if (
+      errorCode === "PAYMENT_PROVIDER_ID_MISMATCH" ||
+      errorCode === "PAYMENT_PROVIDER_ID_EXISTS"
+    ) {
+      return { payment: localPayment, activated: false, status: "failed" };
+    }
+
     const updatedPayment = await failStoredPayment(
       localPayment.id,
       payment.status,
-      error instanceof Error && error.message === "USER_NOT_FOUND"
+      errorCode === "USER_NOT_FOUND"
         ? "USER_NOT_FOUND"
         : "ACCESS_ACTIVATION_FAILED",
     );

@@ -302,6 +302,7 @@ test("rejected provider IDs remain unclaimed for mismatched and already-owned pa
     providerPaymentId: "provider-original",
     providerStatus: "pending",
   });
+  const mismatchedBefore = await findStoredPaymentById(mismatched.id);
 
   const mismatchResult = await activateYooKassaPayment({
     id: "provider-free",
@@ -312,7 +313,7 @@ test("rejected provider IDs remain unclaimed for mismatched and already-owned pa
   });
 
   assert.equal(mismatchResult.status, "failed");
-  assert.equal((await findStoredPaymentById(mismatched.id))?.providerPaymentId, "provider-original");
+  assert.deepEqual(await findStoredPaymentById(mismatched.id), mismatchedBefore);
   assert.equal(await findStoredPaymentByProviderId("provider-free"), null);
 
   const owner = await createStoredPayment({
@@ -330,6 +331,7 @@ test("rejected provider IDs remain unclaimed for mismatched and already-owned pa
     method: "bank_card",
     amount: 1000,
   });
+  const contenderBefore = await findStoredPaymentById(contender.id);
 
   const ownedResult = await activateYooKassaPayment({
     id: "provider-owned",
@@ -340,7 +342,7 @@ test("rejected provider IDs remain unclaimed for mismatched and already-owned pa
   });
 
   assert.equal(ownedResult.status, "failed");
-  assert.equal((await findStoredPaymentById(contender.id))?.providerPaymentId, undefined);
+  assert.deepEqual(await findStoredPaymentById(contender.id), contenderBefore);
   assert.equal((await findStoredPaymentByProviderId("provider-owned"))?.id, owner.id);
 });
 
