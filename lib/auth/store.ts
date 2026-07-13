@@ -8,6 +8,8 @@ import {
   type AccessPlan,
   type StoredAccessPlan,
 } from "@/lib/access/subscription";
+import { applyPaymentAccessGrant } from "@/lib/payments/access-grant";
+import { createMutationQueue } from "@/lib/storage/mutation-queue";
 
 const scryptAsync = promisify(scrypt);
 const dataDirectory = path.join(process.cwd(), ".data");
@@ -22,6 +24,7 @@ export type StoredUser = {
   name: string;
   plan?: StoredAccessPlan;
   planExpiresAt?: string;
+  activatedPaymentIds?: string[];
   providers: AuthProvider[];
   passwordHash?: string;
   avatarUrl?: string;
@@ -81,6 +84,8 @@ async function writeUsers(users: StoredUser[]) {
   await mkdir(dataDirectory, { recursive: true });
   await writeFile(usersFile, JSON.stringify(users, null, 2), "utf8");
 }
+
+const withUsersMutation = createMutationQueue();
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -151,6 +156,39 @@ export async function updateUserPlan(
   await writeUsers(users);
 
   return getPublicUser(user);
+}
+
+export async function applyPaidPaymentAccess(
+  id: string,
+  paymentId: string,
+  durationDays: number,
+  now = new Date(),
+) {
+  return withUsersMutation(async () => {
+    const users = await readUsers();
+    const user = users.find((item) => item.id === id);
+
+    if (!user) {
+      throw new Error("USER_NOT_FOUND");
+    }
+
+    const result = applyPaymentAccessGrant(
+      user,
+      paymentId,
+      durationDays,
+      now,
+    );
+
+    if (result.activated) {
+      Object.assign(user, result.record, { updatedAt: now.toISOString() });
+      await writeUsers(users);
+    }
+
+    return {
+      user: getPublicUser(result.record as StoredUser),
+      activated: result.activated,
+    };
+  });
 }
 
 export async function updateUserPassword(id: string, password: string) {

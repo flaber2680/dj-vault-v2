@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
 import { activateYooKassaPayment } from "@/lib/payments/activate";
 import { getYooKassaPayment } from "@/lib/payments/yookassa";
-
-type YooKassaWebhookPayload = {
-  event?: string;
-  object?: {
-    id?: string;
-  };
-};
+import { getYooKassaWebhookPaymentId } from "@/lib/payments/webhook";
 
 export async function POST(request: Request) {
-  const payload = (await request.json().catch(() => null)) as
-    | YooKassaWebhookPayload
-    | null;
-  const paymentId = payload?.object?.id;
+  const payload = (await request.json().catch(() => null)) as unknown;
+  const paymentId = getYooKassaWebhookPaymentId(payload);
 
   if (!paymentId) {
     return NextResponse.json({ ok: true });

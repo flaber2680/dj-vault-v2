@@ -1,5 +1,4 @@
-import { findUserById, updateUserPlan } from "@/lib/auth/store";
-import { calculateExtendedExpiration } from "@/lib/access/subscription";
+import { applyPaidPaymentAccess } from "@/lib/auth/store";
 import { getAccessPackage } from "@/lib/content/plans";
 import {
   findStoredPaymentById,
@@ -49,7 +48,7 @@ export async function activateYooKassaPayment(
     return { payment: null, activated: false, status: "not_found" };
   }
 
-  if (localPayment.status === "succeeded") {
+  if (localPayment.status === "succeeded" && payment.status !== "succeeded") {
     return { payment: localPayment, activated: false, status: "already_succeeded" };
   }
 
@@ -83,29 +82,43 @@ export async function activateYooKassaPayment(
     return { payment: updatedPayment, activated: false, status: "amount_mismatch" };
   }
 
-  const user = await findUserById(localPayment.userId);
   const accessPackage = getAccessPackage(
     localPayment.packageId ?? localPayment.planId,
   );
 
-  if (!user || !accessPackage) {
+  if (!accessPackage) {
     const updatedPayment = await updateStoredPayment(localPayment.id, {
       providerPaymentId: payment.id,
       providerStatus: payment.status,
       status: "failed",
-      error: !user ? "USER_NOT_FOUND" : "PACKAGE_NOT_FOUND",
+      error: "PACKAGE_NOT_FOUND",
     });
 
     return { payment: updatedPayment, activated: false, status: "failed" };
   }
 
   const durationDays = localPayment.durationDays ?? accessPackage.durationDays;
-  const planExpiresAt = calculateExtendedExpiration(
-    user.planExpiresAt,
-    durationDays,
-  );
+  let accessResult;
 
-  await updateUserPlan(user.id, "club", planExpiresAt);
+  try {
+    accessResult = await applyPaidPaymentAccess(
+      localPayment.userId,
+      payment.id,
+      durationDays,
+    );
+  } catch (error) {
+    const updatedPayment = await updateStoredPayment(localPayment.id, {
+      providerPaymentId: payment.id,
+      providerStatus: payment.status,
+      status: "failed",
+      error:
+        error instanceof Error && error.message === "USER_NOT_FOUND"
+          ? "USER_NOT_FOUND"
+          : "ACCESS_ACTIVATION_FAILED",
+    });
+
+    return { payment: updatedPayment, activated: false, status: "failed" };
+  }
 
   const updatedPayment = await updateStoredPayment(localPayment.id, {
     providerPaymentId: payment.id,
@@ -119,8 +132,12 @@ export async function activateYooKassaPayment(
     packageId: accessPackage.id,
     durationDays,
     amount: localPayment.amount,
-    userId: user.id,
+    userId: localPayment.userId,
   });
 
-  return { payment: updatedPayment, activated: true, status: payment.status };
+  return {
+    payment: updatedPayment,
+    activated: accessResult.activated,
+    status: payment.status,
+  };
 }

@@ -6,6 +6,7 @@ import type {
   LegacyPackageId,
 } from "@/lib/content/plans";
 import type { StoredAccessPlan } from "@/lib/access/subscription";
+import { createMutationQueue } from "@/lib/storage/mutation-queue";
 
 const dataDirectory = path.join(process.cwd(), ".data");
 const paymentsFile = path.join(dataDirectory, "payments.json");
@@ -60,31 +61,35 @@ async function writePayments(payments: StoredPayment[]) {
   await writeFile(paymentsFile, JSON.stringify(payments, null, 2), "utf8");
 }
 
+const withPaymentsMutation = createMutationQueue();
+
 export function isPaymentMethod(value: string): value is PaymentMethod {
   return value === "sbp" || value === "bank_card";
 }
 
 export async function createStoredPayment(input: CreatePaymentInput) {
-  const payments = await readPayments();
-  const now = new Date().toISOString();
-  const payment: StoredPayment = {
-    id: randomUUID(),
-    provider: "yookassa",
-    userId: input.userId,
-    packageId: input.packageId,
-    durationDays: input.durationDays,
-    method: input.method,
-    amount: input.amount,
-    currency: "RUB",
-    status: "pending",
-    createdAt: now,
-    updatedAt: now,
-  };
+  return withPaymentsMutation(async () => {
+    const payments = await readPayments();
+    const now = new Date().toISOString();
+    const payment: StoredPayment = {
+      id: randomUUID(),
+      provider: "yookassa",
+      userId: input.userId,
+      packageId: input.packageId,
+      durationDays: input.durationDays,
+      method: input.method,
+      amount: input.amount,
+      currency: "RUB",
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    };
 
-  payments.push(payment);
-  await writePayments(payments);
+    payments.push(payment);
+    await writePayments(payments);
 
-  return payment;
+    return payment;
+  });
 }
 
 export async function findStoredPaymentById(id: string) {
@@ -116,15 +121,17 @@ export async function updateStoredPayment(
     >
   >,
 ) {
-  const payments = await readPayments();
-  const payment = payments.find((item) => item.id === id);
+  return withPaymentsMutation(async () => {
+    const payments = await readPayments();
+    const payment = payments.find((item) => item.id === id);
 
-  if (!payment) {
-    throw new Error("PAYMENT_NOT_FOUND");
-  }
+    if (!payment) {
+      throw new Error("PAYMENT_NOT_FOUND");
+    }
 
-  Object.assign(payment, patch, { updatedAt: new Date().toISOString() });
-  await writePayments(payments);
+    Object.assign(payment, patch, { updatedAt: new Date().toISOString() });
+    await writePayments(payments);
 
-  return payment;
+    return payment;
+  });
 }
