@@ -144,3 +144,97 @@ test("preserves a legacy activation without inventing payment facts", async (t) 
     },
   );
 });
+
+test("round-trips every current payment field", async (t) => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "dj-vault-schema-"));
+  const databasePath = path.join(directory, "dj-vault.sqlite");
+  const db = openDatabase(databasePath);
+
+  t.after(async () => {
+    closeDatabaseForTests();
+    await rm(directory, { force: true, recursive: true });
+  });
+
+  initializeDatabase(db);
+  db.prepare(`
+    INSERT INTO users (id, email, name, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    "current-user",
+    "current@example.com",
+    "Current User",
+    "2026-07-13T08:00:00.000Z",
+    "2026-07-13T08:00:00.000Z",
+  );
+
+  const payment = {
+    id: "payment-id",
+    provider: "yookassa",
+    provider_payment_id: "provider-payment-id",
+    provider_status: "succeeded",
+    confirmation_url: "https://yookassa.example/confirmation",
+    user_id: "current-user",
+    package_id: "days-90",
+    duration_days: 90,
+    plan_id: "pro",
+    activation_plan_id: "club",
+    method: "bank_card",
+    amount: 2700,
+    currency: "RUB",
+    status: "succeeded",
+    paid_at: "2026-07-13T08:01:00.000Z",
+    activated_at: "2026-07-13T08:02:00.000Z",
+    error: "recovered-provider-warning",
+    created_at: "2026-07-13T08:00:00.000Z",
+    updated_at: "2026-07-13T08:02:00.000Z",
+  };
+
+  db.prepare(`
+    INSERT INTO activated_payments (
+      id,
+      provider,
+      provider_payment_id,
+      provider_status,
+      confirmation_url,
+      user_id,
+      package_id,
+      duration_days,
+      plan_id,
+      activation_plan_id,
+      method,
+      amount,
+      currency,
+      status,
+      paid_at,
+      activated_at,
+      error,
+      created_at,
+      updated_at
+    ) VALUES (
+      @id,
+      @provider,
+      @provider_payment_id,
+      @provider_status,
+      @confirmation_url,
+      @user_id,
+      @package_id,
+      @duration_days,
+      @plan_id,
+      @activation_plan_id,
+      @method,
+      @amount,
+      @currency,
+      @status,
+      @paid_at,
+      @activated_at,
+      @error,
+      @created_at,
+      @updated_at
+    )
+  `).run(payment);
+
+  assert.deepEqual(
+    db.prepare("SELECT * FROM activated_payments WHERE id = ?").get(payment.id),
+    payment,
+  );
+});
