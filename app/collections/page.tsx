@@ -10,6 +10,11 @@ import {
 import { getRemainingDownloadCount } from "@/lib/downloads/store";
 import { formatTrackCount } from "@/lib/content/track-count";
 import { getDemoAccessState } from "@/lib/content/demo-access";
+import {
+  buildCollectionArchive,
+  formatArchiveTrackTotal,
+  formatReleaseCount,
+} from "@/lib/content/collection-archive";
 
 type CollectionsPageProps = {
   searchParams?: Promise<{
@@ -58,6 +63,7 @@ export default async function CollectionsPage({
   const demoCollection = await getDemoCollection();
   const params = searchParams ? await searchParams : {};
   const hasPaidPlan = user ? hasClubAccess(user) : false;
+  const archive = buildCollectionArchive(collections);
   const demoAccessState = getDemoAccessState({
     hasPaidPlan,
     hasUser: Boolean(user),
@@ -231,112 +237,155 @@ export default async function CollectionsPage({
             </div>
           ) : null}
 
-          {collections.map((collection) => (
-            (() => {
-              const downloadsLeft =
-                collectionDownloadsLeft.get(collection.number) ?? null;
-              const genreTips = parseGenreTips(collection.genres);
-              const visibleGenreTips = genreTips.slice(0, DEMO_VISIBLE_GENRE_LIMIT);
-              const hiddenGenreTips = genreTips.slice(DEMO_VISIBLE_GENRE_LIMIT);
+          {archive.releaseCount > 0 ? (
+            <div className="collections-archive-summary" data-reveal>
+              <h2>Архив</h2>
+              <div>
+                <span>
+                  {formatArchiveTrackTotal(
+                    archive.totalTracks,
+                    archive.isApproximate,
+                  )}
+                </span>
+                <span>{formatReleaseCount(archive.releaseCount)}</span>
+              </div>
+            </div>
+          ) : null}
 
-              return (
-                <article
-                  className="collection-card collection-card-demo-split collection-release-card"
-                  id={`collection-${collection.number}`}
-                  key={collection.number}
-                  data-reveal
-                >
-                  <div className="demo-card-copy">
-                    <div className="demo-card-top">
-                      <p>DJ Vault / Drop #{collection.number}</p>
-                      <div className="demo-card-top-meta">
-                        <span>{formatTrackCount(collection.tracks)}</span>
-                        <span>{collection.size}</span>
-                        <span>{collection.date}</span>
-                      </div>
-                    </div>
+          {archive.groups.map((group) => (
+            <section className="collection-month-group" key={group.key}>
+              <header className="collection-month-head" data-reveal>
+                <h2>{group.label}</h2>
+                <div>
+                  <span>
+                    {formatArchiveTrackTotal(
+                      group.totalTracks,
+                      group.isApproximate,
+                    )}
+                  </span>
+                  <span>{formatReleaseCount(group.releaseCount)}</span>
+                </div>
+              </header>
 
-                    <h2>Подборка #{collection.number}</h2>
+              <div className="collection-month-grid">
+                {group.collections.map((collection) => {
+                  const downloadsLeft =
+                    collectionDownloadsLeft.get(collection.number) ?? null;
+                  const genreTips = parseGenreTips(collection.genres);
+                  const visibleGenreTips = genreTips.slice(
+                    0,
+                    DEMO_VISIBLE_GENRE_LIMIT,
+                  );
+                  const hiddenGenreTips = genreTips.slice(
+                    DEMO_VISIBLE_GENRE_LIMIT,
+                  );
 
-                    <div
-                      className="demo-card-tip-strip"
-                      aria-label={`Жанры подборки ${collection.number}`}
+                  return (
+                    <article
+                      className="collection-card collection-card-demo-split collection-release-card"
+                      id={`collection-${collection.number}`}
+                      key={collection.number}
+                      data-reveal
                     >
-                      {visibleGenreTips.map((tip) => (
-                        <span
-                          className="demo-card-tip"
-                          key={`${collection.number}-${tip.name}-${tip.count ?? "none"}`}
+                      <div className="demo-card-copy">
+                        <div className="collection-release-meta">
+                          <span>{formatTrackCount(collection.tracks)}</span>
+                          <span>{collection.size}</span>
+                          <span>{collection.date}</span>
+                        </div>
+
+                        <h2>Подборка #{collection.number}</h2>
+
+                        <div
+                          className="demo-card-tip-strip"
+                          aria-label={`Жанры подборки ${collection.number}`}
                         >
-                          <span>{tip.name}</span>
-                          {tip.count ? <strong>{tip.count}</strong> : null}
-                        </span>
-                      ))}
-                      {hiddenGenreTips.length > 0 ? (
-                        <span
-                          className="demo-card-more"
-                          tabIndex={0}
-                          aria-label={`Еще ${hiddenGenreTips.length} скрытых стилей`}
-                        >
-                          +{hiddenGenreTips.length}
-                          <span className="demo-card-more-popover" role="tooltip">
-                            {hiddenGenreTips.map((tip) => (
+                          {visibleGenreTips.map((tip) => (
+                            <span
+                              className="demo-card-tip"
+                              key={`${collection.number}-${tip.name}-${tip.count ?? "none"}`}
+                            >
+                              <span>{tip.name}</span>
+                              {tip.count ? <strong>{tip.count}</strong> : null}
+                            </span>
+                          ))}
+                          {hiddenGenreTips.length > 0 ? (
+                            <span
+                              className="demo-card-more"
+                              tabIndex={0}
+                              aria-label={`Еще ${hiddenGenreTips.length} скрытых стилей`}
+                            >
+                              +{hiddenGenreTips.length}
                               <span
-                                className="demo-card-more-item"
-                                key={`${collection.number}-${tip.name}-${tip.count ?? "none"}-hidden`}
+                                className="demo-card-more-popover"
+                                role="tooltip"
                               >
-                                <span>{tip.name}</span>
-                                {tip.count ? <strong>{tip.count}</strong> : null}
+                                {hiddenGenreTips.map((tip) => (
+                                  <span
+                                    className="demo-card-more-item"
+                                    key={`${collection.number}-${tip.name}-${tip.count ?? "none"}-hidden`}
+                                  >
+                                    <span>{tip.name}</span>
+                                    {tip.count ? (
+                                      <strong>{tip.count}</strong>
+                                    ) : null}
+                                  </span>
+                                ))}
                               </span>
-                            ))}
-                          </span>
-                        </span>
-                      ) : null}
-                    </div>
+                            </span>
+                          ) : null}
+                        </div>
 
-                    {collection.description ? (
-                      <p className="collection-card-description demo-card-description">
-                        {collection.description}
-                      </p>
-                    ) : null}
+                        {collection.description ? (
+                          <p className="collection-card-description demo-card-description">
+                            {collection.description}
+                          </p>
+                        ) : null}
 
-                    <div className="collection-card-action demo-card-action">
-                      {!hasPaidPlan ? (
-                        <a className="button-outline" href="/pricing">
-                          <span className="button-label">Вступить в клуб</span>
-                        </a>
-                      ) : collection.s3Key && downloadsLeft !== null ? (
-                        <CollectionDownloadAction
-                          collectionNumber={collection.number}
-                          initialRemaining={downloadsLeft}
-                          label="Скачать подборку"
-                          limit={collection.downloadLimit}
-                        />
-                      ) : (
-                        <span
-                          className="button-outline button-disabled"
-                          aria-disabled="true"
-                        >
-                          <span className="button-label">
-                            Материал скоро появится
-                          </span>
-                        </span>
-                      )}
+                        <div className="collection-card-action demo-card-action">
+                          {!hasPaidPlan ? (
+                            <a
+                              className="button-outline collection-locked-action"
+                              href="/pricing"
+                            >
+                              <span
+                                className="collection-lock-icon"
+                                aria-hidden="true"
+                              />
+                              <span className="button-label">Открыть доступ</span>
+                            </a>
+                          ) : collection.s3Key && downloadsLeft !== null ? (
+                            <CollectionDownloadAction
+                              collectionNumber={collection.number}
+                              initialRemaining={downloadsLeft}
+                              label="Скачать подборку"
+                              limit={collection.downloadLimit}
+                            />
+                          ) : (
+                            <span
+                              className="button-outline button-disabled"
+                              aria-disabled="true"
+                            >
+                              <span className="button-label">
+                                Материал скоро появится
+                              </span>
+                            </span>
+                          )}
 
-                      {!hasPaidPlan ? (
-                        <p className="collection-download-message">
-                          Доступно участникам клуба DJ Vault.
-                        </p>
-                      ) : params.collection === collection.number &&
-                        activeDownloadMessage ? (
-                        <p className="collection-download-message">
-                          {activeDownloadMessage}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                </article>
-              );
-            })()
+                          {hasPaidPlan &&
+                          params.collection === collection.number &&
+                          activeDownloadMessage ? (
+                            <p className="collection-download-message">
+                              {activeDownloadMessage}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
           ))}
         </div>
       </section>
