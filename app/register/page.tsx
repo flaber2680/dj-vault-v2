@@ -14,7 +14,7 @@ type RegisterPageProps = {
 
 const errorMessages: Record<string, string> = {
   invalid_register:
-    "Введите корректную почту и пароль минимум из 6 символов.",
+    "Введите корректную почту и пароль минимум из 10 символов.",
   user_exists:
     "Аккаунт с этой почтой уже есть. Войдите или используйте другую почту.",
   invalid_promo:

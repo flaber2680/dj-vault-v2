@@ -32,6 +32,7 @@ export type StoredUser = {
   activatedPaymentIds?: string[];
   providers: AuthProvider[];
   passwordHash?: string;
+  sessionVersion: number;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -47,6 +48,14 @@ export type PublicUser = {
   avatarUrl?: string;
   createdAt: string;
 };
+
+export const MINIMUM_PASSWORD_LENGTH = 10;
+
+export function assertPasswordPolicy(password: string): void {
+  if (password.length < MINIMUM_PASSWORD_LENGTH) {
+    throw new Error("PASSWORD_TOO_SHORT");
+  }
+}
 
 export function normalizeEmail(email: string) {
   return normalizeStoredEmail(email);
@@ -87,6 +96,14 @@ export async function verifyPassword(password: string, storedHash?: string) {
 export async function findUserById(id: string) {
   const user = findStoredUserById(id);
   return user ? getPublicUser(user) : null;
+}
+
+export async function findUserForSession(id: string) {
+  const user = findStoredUserById(id);
+
+  return user
+    ? { sessionVersion: user.sessionVersion, user: getPublicUser(user) }
+    : null;
 }
 
 export async function getUsers() {
@@ -157,6 +174,7 @@ export async function registerEmailUserWithReferral({
   name?: string;
   promoCode?: string;
 }) {
+  assertPasswordPolicy(password);
   return registerStoredEmailUserWithReferral({
     email,
     name,

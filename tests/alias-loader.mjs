@@ -5,6 +5,17 @@ import { pathToFileURL } from "node:url";
 const projectRoot = path.resolve(import.meta.dirname, "..");
 
 export async function resolve(specifier, context, nextResolve) {
+  if (specifier.startsWith("next/")) {
+    const nextModulePath = path.join(projectRoot, "node_modules", `${specifier}.js`);
+
+    if (existsSync(nextModulePath)) {
+      return {
+        shortCircuit: true,
+        url: pathToFileURL(nextModulePath).href,
+      };
+    }
+  }
+
   if (!specifier.startsWith("@/")) {
     return nextResolve(specifier, context);
   }

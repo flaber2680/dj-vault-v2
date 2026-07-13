@@ -2,15 +2,21 @@ import { mkdir, readFile, writeFile } from "fs/promises";
 import net from "net";
 import path from "path";
 import tls from "tls";
-
-const dataDirectory = path.join(process.cwd(), ".data");
-const outboxFile = path.join(dataDirectory, "mail-outbox.json");
+import { getDataDirectory } from "@/lib/database/config";
 
 type EmailMessage = {
   to: string;
   subject: string;
   text: string;
 };
+
+function isLocalEnvironment() {
+  return process.env.NODE_ENV !== "production";
+}
+
+function getOutboxFile() {
+  return path.join(getDataDirectory(), "mail-outbox.json");
+}
 
 type StoredOutboxMessage = EmailMessage & {
   createdAt: string;
@@ -60,7 +66,7 @@ function getSmtpConfig(): SmtpConfig | null {
 
 async function readOutbox(): Promise<StoredOutboxMessage[]> {
   try {
-    const raw = await readFile(outboxFile, "utf8");
+    const raw = await readFile(getOutboxFile(), "utf8");
     return JSON.parse(raw) as StoredOutboxMessage[];
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -80,7 +86,8 @@ async function saveToOutbox(message: EmailMessage, reason: string) {
     reason,
   });
 
-  await mkdir(dataDirectory, { recursive: true });
+  const outboxFile = getOutboxFile();
+  await mkdir(path.dirname(outboxFile), { recursive: true });
   await writeFile(outboxFile, JSON.stringify(outbox, null, 2), "utf8");
 }
 
@@ -270,6 +277,9 @@ export async function sendEmail(message: EmailMessage) {
   const config = getSmtpConfig();
 
   if (!config) {
+    if (!isLocalEnvironment()) {
+      throw new Error("SMTP_NOT_CONFIGURED");
+    }
     await safeSaveToOutbox(message, "SMTP_NOT_CONFIGURED");
     return { sent: false };
   }
@@ -280,7 +290,10 @@ export async function sendEmail(message: EmailMessage) {
     const reason =
       error instanceof Error ? `SMTP_SEND_FAILED:${error.message}` : "SMTP_SEND_FAILED";
 
-    console.error("SMTP_SEND_FAILED", error);
+    console.error("SMTP_SEND_FAILED");
+    if (!isLocalEnvironment()) {
+      throw new Error(reason);
+    }
     await safeSaveToOutbox(message, reason);
 
     return { sent: false };

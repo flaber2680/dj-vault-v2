@@ -18,6 +18,7 @@ export type StoredUserRecord = {
   activatedPaymentIds?: string[];
   providers: Array<"email">;
   passwordHash?: string;
+  sessionVersion: number;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
@@ -41,6 +42,7 @@ type UserRow = {
   plan: StoredAccessPlan | null;
   plan_expires_at: string | null;
   password_hash: string | null;
+  session_version: number;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
@@ -100,6 +102,7 @@ function toStoredUser(db: Database.Database, row: UserRow): StoredUserRecord {
     ...(activatedPaymentIds.length ? { activatedPaymentIds } : {}),
     providers: getProviders(db, row.id),
     passwordHash: row.password_hash ?? undefined,
+    sessionVersion: row.session_version,
     avatarUrl: row.avatar_url ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

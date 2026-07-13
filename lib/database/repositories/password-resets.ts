@@ -87,7 +87,11 @@ export function consumePasswordReset({
       throw new Error("USER_NOT_FOUND");
     }
 
-    db.prepare("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?").run(
+    db.prepare(`
+      UPDATE users
+      SET password_hash = ?, session_version = session_version + 1, updated_at = ?
+      WHERE id = ?
+    `).run(
       passwordHash,
       usedAt,
       record.user_id,

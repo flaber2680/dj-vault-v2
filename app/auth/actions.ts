@@ -52,7 +52,7 @@ export async function registerWithEmail(formData: FormData) {
   const promoCode = formValue(formData, "promoCode");
   const returnTo = normalizeAuthReturnPath(formValue(formData, "returnTo"));
 
-  if (!email.includes("@") || password.length < 6) {
+  if (!email.includes("@") || password.length < 10) {
     redirectWithError("/register", "invalid_register", returnTo);
   }
 
@@ -104,8 +104,11 @@ export async function requestPasswordResetAction(formData: FormData) {
   const params = new URLSearchParams({ sent: "1" });
 
   if (email.includes("@")) {
-    await requestPasswordReset(email);
-    params.set("email", email);
+    try {
+      await requestPasswordReset(email);
+    } catch {
+      console.error("PASSWORD_RESET_REQUEST_FAILED");
+    }
   }
 
   redirect(`/forgot-password?${params.toString()}`);
@@ -119,7 +122,7 @@ export async function resetPasswordAction(formData: FormData) {
     redirectToPasswordReset("invalid");
   }
 
-  if (password.length < 6) {
+  if (password.length < 10) {
     redirectToPasswordReset("short_password", token);
   }
 
