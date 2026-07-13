@@ -14,6 +14,7 @@
 /coverage
 /.superpowers/
 /.playwright-cli/
+/.worktrees/
 
 # next.js
 /.next/
