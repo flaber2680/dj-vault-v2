@@ -1,19 +1,23 @@
-import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "crypto";
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
+import { randomBytes, scrypt, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import {
-  migrateLegacyAccessPlans,
-  normalizeAccessPlan,
+  applyStoredPaidPaymentAccess,
+  createEmailUser,
+  findStoredUserByEmail,
+  findStoredUserById,
+  getPublicUser as toPublicUser,
+  getStoredUsers,
+  normalizeEmail as normalizeStoredEmail,
+  registerEmailUserWithReferral as registerStoredEmailUserWithReferral,
+  updateStoredUserPassword,
+  updateStoredUserPlan,
+} from "../database/repositories/users.ts";
+import {
   type AccessPlan,
   type StoredAccessPlan,
-} from "@/lib/access/subscription";
-import { applyPaymentAccessGrant } from "@/lib/payments/access-grant";
-import { createMutationQueue } from "@/lib/storage/mutation-queue";
+} from "../access/subscription.ts";
 
 const scryptAsync = promisify(scrypt);
-const dataDirectory = path.join(process.cwd(), ".data");
-const usersFile = path.join(dataDirectory, "users.json");
 
 export type AuthProvider = "email";
 export type TariffPlan = AccessPlan;
@@ -44,50 +48,14 @@ export type PublicUser = {
 };
 
 export function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
+  return normalizeStoredEmail(email);
 }
 
 export function getPublicUser(user: StoredUser): PublicUser {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    plan: normalizeAccessPlan(user.plan),
-    planExpiresAt: user.planExpiresAt,
-    providers: user.providers,
-    avatarUrl: user.avatarUrl,
-    createdAt: user.createdAt,
-  };
+  return toPublicUser(user);
 }
 
-async function readUsers(): Promise<StoredUser[]> {
-  try {
-    const raw = await readFile(usersFile, "utf8");
-    const storedUsers = JSON.parse(raw) as StoredUser[];
-    const migration = migrateLegacyAccessPlans(storedUsers);
-
-    if (migration.changed) {
-      await writeUsers(migration.users);
-    }
-
-    return migration.users;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return [];
-    }
-
-    throw error;
-  }
-}
-
-async function writeUsers(users: StoredUser[]) {
-  await mkdir(dataDirectory, { recursive: true });
-  await writeFile(usersFile, JSON.stringify(users, null, 2), "utf8");
-}
-
-const withUsersMutation = createMutationQueue();
-
-async function hashPassword(password: string) {
+export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
 
@@ -116,25 +84,16 @@ export async function verifyPassword(password: string, storedHash?: string) {
 }
 
 export async function findUserById(id: string) {
-  const users = await readUsers();
-  const user = users.find((item) => item.id === id);
-
+  const user = findStoredUserById(id);
   return user ? getPublicUser(user) : null;
 }
 
 export async function getUsers() {
-  const users = await readUsers();
-
-  return users
-    .map(getPublicUser)
-    .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  return getStoredUsers().map(getPublicUser);
 }
 
 export async function findUserByEmail(email: string) {
-  const users = await readUsers();
-  const normalizedEmail = normalizeEmail(email);
-
-  return users.find((user) => user.email === normalizedEmail) ?? null;
+  return findStoredUserByEmail(email) as StoredUser | null;
 }
 
 export async function updateUserPlan(
@@ -142,20 +101,7 @@ export async function updateUserPlan(
   plan: TariffPlan,
   planExpiresAt?: string,
 ) {
-  const users = await readUsers();
-  const user = users.find((item) => item.id === id);
-
-  if (!user) {
-    throw new Error("USER_NOT_FOUND");
-  }
-
-  user.plan = plan;
-  user.planExpiresAt = plan === "free" ? undefined : planExpiresAt;
-  user.updatedAt = new Date().toISOString();
-
-  await writeUsers(users);
-
-  return getPublicUser(user);
+  return updateStoredUserPlan(id, plan, planExpiresAt) as PublicUser;
 }
 
 export async function applyPaidPaymentAccess(
@@ -164,48 +110,14 @@ export async function applyPaidPaymentAccess(
   durationDays: number,
   now = new Date(),
 ) {
-  return withUsersMutation(async () => {
-    const users = await readUsers();
-    const user = users.find((item) => item.id === id);
-
-    if (!user) {
-      throw new Error("USER_NOT_FOUND");
-    }
-
-    const result = applyPaymentAccessGrant(
-      user,
-      paymentId,
-      durationDays,
-      now,
-    );
-
-    if (result.activated) {
-      Object.assign(user, result.record, { updatedAt: now.toISOString() });
-      await writeUsers(users);
-    }
-
-    return {
-      user: getPublicUser(result.record as StoredUser),
-      activated: result.activated,
-    };
-  });
+  return applyStoredPaidPaymentAccess(id, paymentId, durationDays, now) as {
+    user: PublicUser;
+    activated: boolean;
+  };
 }
 
 export async function updateUserPassword(id: string, password: string) {
-  const users = await readUsers();
-  const user = users.find((item) => item.id === id);
-
-  if (!user) {
-    throw new Error("USER_NOT_FOUND");
-  }
-
-  user.passwordHash = await hashPassword(password);
-  user.providers = Array.from(new Set([...user.providers, "email"]));
-  user.updatedAt = new Date().toISOString();
-
-  await writeUsers(users);
-
-  return getPublicUser(user);
+  return updateStoredUserPassword(id, await hashPassword(password)) as PublicUser;
 }
 
 export async function createUserWithEmail({
@@ -217,28 +129,28 @@ export async function createUserWithEmail({
   password: string;
   name?: string;
 }) {
-  const users = await readUsers();
-  const normalizedEmail = normalizeEmail(email);
-  const existingUser = users.find((user) => user.email === normalizedEmail);
-
-  if (existingUser) {
-    throw new Error("USER_EXISTS");
-  }
-
-  const now = new Date().toISOString();
-  const user: StoredUser = {
-    id: randomUUID(),
-    email: normalizedEmail,
-    name: name?.trim() || normalizedEmail.split("@")[0],
-    plan: "free",
-    providers: ["email"],
+  return createEmailUser({
+    email,
+    name,
     passwordHash: await hashPassword(password),
-    createdAt: now,
-    updatedAt: now,
-  };
+  }) as PublicUser;
+}
 
-  users.push(user);
-  await writeUsers(users);
-
-  return getPublicUser(user);
+export async function registerEmailUserWithReferral({
+  email,
+  password,
+  name,
+  promoCode,
+}: {
+  email: string;
+  password: string;
+  name?: string;
+  promoCode?: string;
+}) {
+  return registerStoredEmailUserWithReferral({
+    email,
+    name,
+    passwordHash: await hashPassword(password),
+    promoCode,
+  }) as PublicUser;
 }

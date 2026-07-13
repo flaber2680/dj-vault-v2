@@ -1,4 +1,4 @@
-import { applyPaidPaymentAccess } from "@/lib/auth/store";
+import { activatePaymentTransaction } from "@/lib/database/repositories/payments";
 import { getPaymentPackage } from "@/lib/payments/packages";
 import {
   findStoredPaymentById,
@@ -7,7 +7,6 @@ import {
   type StoredPayment,
 } from "@/lib/payments/store";
 import type { YooKassaPayment } from "@/lib/payments/yookassa";
-import { recordPaidReferralConversion } from "@/lib/referrals/store";
 
 type ActivationResult = {
   payment: StoredPayment | null;
@@ -27,10 +26,8 @@ function providerAmountMatches(localPayment: StoredPayment, payment: YooKassaPay
 
 async function findLocalPayment(payment: YooKassaPayment) {
   const localPaymentId = payment.metadata?.localPaymentId;
-
   if (localPaymentId) {
     const localPayment = await findStoredPaymentById(localPaymentId);
-
     if (localPayment) {
       return localPayment;
     }
@@ -43,7 +40,6 @@ export async function activateYooKassaPayment(
   payment: YooKassaPayment,
 ): Promise<ActivationResult> {
   const localPayment = await findLocalPayment(payment);
-
   if (!localPayment) {
     return { payment: null, activated: false, status: "not_found" };
   }
@@ -58,7 +54,6 @@ export async function activateYooKassaPayment(
       providerStatus: payment.status,
       status: "canceled",
     });
-
     return { payment: updatedPayment, activated: false, status: payment.status };
   }
 
@@ -67,7 +62,6 @@ export async function activateYooKassaPayment(
       providerPaymentId: payment.id,
       providerStatus: payment.status,
     });
-
     return { payment: updatedPayment, activated: false, status: payment.status };
   }
 
@@ -78,14 +72,12 @@ export async function activateYooKassaPayment(
       status: "failed",
       error: "PAYMENT_AMOUNT_MISMATCH",
     });
-
     return { payment: updatedPayment, activated: false, status: "amount_mismatch" };
   }
 
   const accessPackage = getPaymentPackage(
     localPayment.packageId ?? localPayment.planId,
   );
-
   if (!accessPackage) {
     const updatedPayment = await updateStoredPayment(localPayment.id, {
       providerPaymentId: payment.id,
@@ -93,19 +85,25 @@ export async function activateYooKassaPayment(
       status: "failed",
       error: "PACKAGE_NOT_FOUND",
     });
-
     return { payment: updatedPayment, activated: false, status: "failed" };
   }
 
-  const durationDays = localPayment.durationDays ?? accessPackage.durationDays;
-  let accessResult;
-
   try {
-    accessResult = await applyPaidPaymentAccess(
-      localPayment.userId,
-      payment.id,
-      durationDays,
-    );
+    const result = activatePaymentTransaction({
+      paymentId: localPayment.id,
+      providerPaymentId: payment.id,
+      providerStatus: payment.status,
+      paidAt: new Date().toISOString(),
+      packageId: accessPackage.id,
+      durationDays: localPayment.durationDays ?? accessPackage.durationDays,
+      convertReferral: !accessPackage.isSmoke,
+    });
+
+    return {
+      payment: result.payment as StoredPayment,
+      activated: result.activated,
+      status: payment.status,
+    };
   } catch (error) {
     const updatedPayment = await updateStoredPayment(localPayment.id, {
       providerPaymentId: payment.id,
@@ -116,30 +114,6 @@ export async function activateYooKassaPayment(
           ? "USER_NOT_FOUND"
           : "ACCESS_ACTIVATION_FAILED",
     });
-
     return { payment: updatedPayment, activated: false, status: "failed" };
   }
-
-  const updatedPayment = await updateStoredPayment(localPayment.id, {
-    providerPaymentId: payment.id,
-    providerStatus: payment.status,
-    status: "succeeded",
-    paidAt: new Date().toISOString(),
-  });
-
-  if (!accessPackage.isSmoke) {
-    await recordPaidReferralConversion({
-      paymentId: updatedPayment.id,
-      packageId: accessPackage.id,
-      durationDays,
-      amount: localPayment.amount,
-      userId: localPayment.userId,
-    });
-  }
-
-  return {
-    payment: updatedPayment,
-    activated: accessResult.activated,
-    status: payment.status,
-  };
 }

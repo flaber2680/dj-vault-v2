@@ -3,8 +3,8 @@
 import { signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import {
-  createUserWithEmail,
   findUserByEmail,
+  registerEmailUserWithReferral,
   verifyPassword,
 } from "@/lib/auth/store";
 import { hasClubAccess } from "@/lib/access/subscription";
@@ -13,10 +13,6 @@ import {
   resetPasswordByToken,
 } from "@/lib/auth/password-reset";
 import { clearSessionCookie, setSessionCookie } from "@/lib/auth/session";
-import {
-  findActivePromoCode,
-  recordPromoRegistration,
-} from "@/lib/referrals/store";
 import { normalizeAuthReturnPath } from "@/lib/auth/return-path";
 
 function formValue(formData: FormData, key: string) {
@@ -60,23 +56,13 @@ export async function registerWithEmail(formData: FormData) {
     redirectWithError("/register", "invalid_register", returnTo);
   }
 
-  if (promoCode) {
-    const activePromoCode = await findActivePromoCode(promoCode);
-
-    if (!activePromoCode) {
-      redirectWithError("/register", "invalid_promo", returnTo);
-    }
-  }
-
   try {
-    const user = await createUserWithEmail({ email, password, name });
-
-    if (promoCode) {
-      await recordPromoRegistration({
-        promoCode,
-        referredUserId: user.id,
-      });
-    }
+    const user = await registerEmailUserWithReferral({
+      email,
+      password,
+      name,
+      promoCode: promoCode || undefined,
+    });
 
     await setSessionCookie(user.id);
   } catch (error) {
