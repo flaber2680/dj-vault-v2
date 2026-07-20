@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 
-import { HeroStrands } from "@/components/effects/HeroStrands";
 import { FallingCube } from "@/components/sections/FallingCube";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -19,8 +18,6 @@ export async function Hero() {
       <section className="hero">
         <div className="hero-container">
           <div className="hero-content">
-            <HeroStrands />
-
             <div
               className="hero-label"
               data-reveal
