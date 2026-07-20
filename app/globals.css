@@ -1490,6 +1490,13 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   min-height: 0;
   padding: 28px;
   display: flex;
+  position: relative;
+  z-index: 0;
+}
+
+.collection-release-card:hover,
+.collection-release-card:focus-within {
+  z-index: 1;
 }
 
 .collection-release-card h2 {
@@ -1615,7 +1622,6 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, .18);
   background: #000;
-  box-shadow: 0 0 0 12px #000;
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px);

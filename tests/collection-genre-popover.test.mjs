@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-test("renders the hidden-genre popover as an opaque layer above nearby tags", async () => {
+test("keeps the active collection card above its neighboring cards", async () => {
   const styles = await readFile(
     new URL("../app/globals.css", import.meta.url),
     "utf8",
@@ -18,6 +18,11 @@ test("renders the hidden-genre popover as an opaque layer above nearby tags", as
   );
   assert.match(
     styles,
-    /\.demo-card-more-popover \{[^}]*?box-shadow: 0 0 0 12px #000;/,
+    /\.collection-release-card \{[^}]*?position: relative;[^}]*?z-index: 0;/,
   );
+  assert.match(
+    styles,
+    /\.collection-release-card:hover,\s*\.collection-release-card:focus-within \{[^}]*?z-index: 1;/,
+  );
+  assert.doesNotMatch(styles, /\.demo-card-more-popover \{[^}]*?box-shadow:/);
 });
