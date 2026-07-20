@@ -390,6 +390,23 @@ test("imports every legacy store once without changing source files", async (t) 
   );
 });
 
+test("matches a legacy activation provider ID to its existing payment", async (t) => {
+  const { db, directory } = await createTestDatabase(t);
+  const users = structuredClone(fixtureData["users.json"]);
+  users[1].activatedPaymentIds.push("provider-payment-42");
+  await writeFixtures(directory, { "users.json": users });
+
+  const report = importLegacyData(db, directory);
+
+  assert.equal(report.counts.activatedPayments, 2);
+  assert.equal(count(db, "activated_payments"), 2);
+  assert.equal(
+    db.prepare("SELECT count(*) AS count FROM activated_payments WHERE id = ?")
+      .get("provider-payment-42").count,
+    0,
+  );
+});
+
 test("conflicting normalized emails roll back the complete import", async (t) => {
   const { db, directory } = await createTestDatabase(t);
   await writeFixtures(directory, {

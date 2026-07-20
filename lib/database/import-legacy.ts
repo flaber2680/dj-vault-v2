@@ -340,6 +340,30 @@ function uniqueBy(values: string[], description: string): void {
   }
 }
 
+function getSyntheticActivationIds(data: LegacyData): string[] {
+  const knownPaymentIds = new Set([
+    ...data.payments.map((payment) => payment.id),
+    ...data.payments
+      .map((payment) => payment.providerPaymentId)
+      .filter((value): value is string => Boolean(value)),
+  ]);
+
+  return [...new Set(
+    data.users.flatMap((user) =>
+      (user.activatedPaymentIds ?? []).filter(
+        (paymentId) => !knownPaymentIds.has(paymentId),
+      ),
+    ),
+  )];
+}
+
+function getImportedPaymentIds(data: LegacyData): string[] {
+  return [...new Set([
+    ...data.payments.map((payment) => payment.id),
+    ...getSyntheticActivationIds(data),
+  ])];
+}
+
 function validateRelationships(data: LegacyData): void {
   const usersById = new Map(data.users.map((user) => [user.id, user]));
   uniqueBy(data.users.map((user) => user.id), "user IDs");
@@ -388,14 +412,20 @@ function validateRelationships(data: LegacyData): void {
   const paymentOwners = new Map(
     data.payments.map((payment) => [payment.id, payment.userId]),
   );
+  const providerPaymentOwners = new Map(
+    data.payments
+      .filter((payment) => Boolean(payment.providerPaymentId))
+      .map((payment) => [payment.providerPaymentId!, payment.userId]),
+  );
   for (const [paymentId, userId] of activationOwners) {
-    paymentOwners.set(paymentId, userId);
+    const knownOwner = paymentOwners.get(paymentId) ?? providerPaymentOwners.get(paymentId);
+    if (knownOwner && knownOwner !== userId) {
+      throw new Error(`Conflicting legacy activated payment ownership for ${paymentId}`);
+    }
   }
   const effectiveProviderIds = [
     ...data.payments.map((payment) => payment.providerPaymentId).filter(Boolean),
-    ...[...activationOwners.keys()].filter(
-      (paymentId) => !data.payments.some((payment) => payment.id === paymentId),
-    ),
+    ...getSyntheticActivationIds(data),
   ] as string[];
   uniqueBy(effectiveProviderIds, "provider payment IDs");
 
@@ -502,10 +532,7 @@ export function getExpectedImportCounts(data: LegacyData): ImportCounts {
   return {
     users: data.users.length,
     userProviders: data.users.reduce((total, user) => total + user.providers.length, 0),
-    activatedPayments: new Set([
-      ...data.payments.map((payment) => payment.id),
-      ...data.users.flatMap((user) => user.activatedPaymentIds ?? []),
-    ]).size,
+    activatedPayments: getImportedPaymentIds(data).length,
     promoCodes: data.referralData.codes.length,
     referrals: data.referralData.referrals.length,
     collections: data.collections.length,
@@ -588,6 +615,11 @@ function insertLegacyData(
     )
   `);
   const paymentsById = new Map(data.payments.map((payment) => [payment.id, payment]));
+  const paymentsByProviderId = new Map(
+    data.payments
+      .filter((payment) => Boolean(payment.providerPaymentId))
+      .map((payment) => [payment.providerPaymentId!, payment]),
+  );
   for (const payment of data.payments) {
     insertPayment.run({
       ...payment,
@@ -607,7 +639,7 @@ function insertLegacyData(
   `);
   for (const user of data.users) {
     for (const paymentId of new Set(user.activatedPaymentIds ?? [])) {
-      if (!paymentsById.has(paymentId)) {
+      if (!paymentsById.has(paymentId) && !paymentsByProviderId.has(paymentId)) {
         insertLegacyActivation.run(paymentId, paymentId, user.id);
       }
     }
@@ -751,10 +783,7 @@ export function importLegacyData(
     assertIds(
       db,
       "SELECT id FROM activated_payments",
-      [...new Set([
-        ...data.payments.map((payment) => payment.id),
-        ...data.users.flatMap((user) => user.activatedPaymentIds ?? []),
-      ])],
+      getImportedPaymentIds(data),
       "activated payments",
     );
     assertIds(
