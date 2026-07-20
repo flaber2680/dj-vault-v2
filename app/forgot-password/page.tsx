@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { requestPasswordResetAction } from "@/app/auth/actions";
 
+export const metadata = {
+  title: "Восстановление пароля",
+  robots: { index: false, follow: false },
+};
+
 type ForgotPasswordPageProps = {
   searchParams?: Promise<{
     email?: string;

@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { resetPasswordAction } from "@/app/auth/actions";
 
+export const metadata = {
+  title: "Новый пароль",
+  robots: { index: false, follow: false },
+};
+
 type ResetPasswordPageProps = {
   searchParams?: Promise<{
     token?: string;

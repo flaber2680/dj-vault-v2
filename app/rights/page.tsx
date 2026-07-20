@@ -3,6 +3,10 @@ import { ScrollEffects } from "@/components/ScrollEffects";
 import { LegalDocument } from "@/components/legal/LegalDocument";
 import { legalPages } from "@/lib/content/legal";
 
+export const metadata = {
+  title: "Правообладателям",
+};
+
 export default function RightsPage() {
   return (
     <main className="page">

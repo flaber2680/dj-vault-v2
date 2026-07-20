@@ -5,6 +5,10 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import { accessPackageList } from "@/lib/content/plans";
 
+export const metadata = {
+  title: "Доступ в клуб",
+};
+
 const planBenefits = [
   "Закрытый клуб DJ Vault",
   "Еженедельные обновления",

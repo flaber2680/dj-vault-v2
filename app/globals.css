@@ -24,10 +24,6 @@ body {
     sans-serif;
 }
 
-body {
-  overflow-x: hidden;
-}
-
 body::before {
   content: none;
 }
@@ -2073,6 +2069,7 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 
 .legal-page {
   min-height: calc(100vh - 60px);
+  min-width: 0;
   padding: var(--section-gap) var(--section-padding-x);
   position: relative;
   z-index: 4;
@@ -2080,6 +2077,16 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 
 .legal-document {
   width: min(920px, 100%);
+  min-width: 0;
+}
+
+.legal-document section {
+  min-width: 0;
+}
+
+.legal-document :is(h1, h2, p, a, .legal-requisites, .legal-requisites span) {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .legal-document h1 {

@@ -5,6 +5,11 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import { normalizeAuthReturnPath } from "@/lib/auth/return-path";
 
+export const metadata = {
+  title: "Вход",
+  robots: { index: false, follow: false },
+};
+
 type LoginPageProps = {
   searchParams?: Promise<{
     error?: string;
