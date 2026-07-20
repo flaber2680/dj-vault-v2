@@ -14,6 +14,10 @@ test("renders the hidden-genre popover as an opaque layer above nearby tags", as
   );
   assert.match(
     styles,
-    /\.demo-card-more-popover \{[^}]*?z-index: 10;[^}]*?background: #050505;/,
+    /\.demo-card-more-popover \{[^}]*?z-index: 10;[^}]*?background: #000;/,
+  );
+  assert.match(
+    styles,
+    /\.demo-card-more-popover \{[^}]*?box-shadow: 0 0 0 12px #000;/,
   );
 });
