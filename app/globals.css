@@ -1579,6 +1579,7 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 
 .demo-card-more {
   position: relative;
+  z-index: 2;
   cursor: default;
   color: #fff;
   outline: none;
@@ -1607,13 +1608,13 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   position: absolute;
   right: 0;
   top: calc(100% + 10px);
-  z-index: 5;
+  z-index: 10;
   width: max-content;
   min-width: 210px;
   max-width: min(320px, calc(100vw - 48px));
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, .18);
-  background: rgba(5, 5, 5, .96);
+  background: #050505;
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px);
