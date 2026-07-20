@@ -90,7 +90,7 @@ APP_DIR=/var/www/dj-vault-v2
 PM2_NAME=dj-vault
 BACKUP_ROOT=/var/backups/dj-vault
 
-git status --short
+test -z "$(git status --porcelain)"
 git branch --show-current
 git rev-parse HEAD
 df -h "$APP_DIR" /var/lib /var/backups
@@ -134,9 +134,10 @@ The backup includes `.data`, any existing persistent database directory, `.env`,
 cd /var/www/dj-vault-v2
 RELEASE_BRANCH="$(git branch --show-current)"
 test -n "$RELEASE_BRANCH"
-git status --short
+test -z "$(git status --porcelain)"
 git fetch --prune origin
 git pull --ff-only origin "$RELEASE_BRANCH"
+test -z "$(git status --porcelain)"
 npm ci
 npm run build
 
@@ -234,25 +235,33 @@ APP_DIR=/var/www/dj-vault-v2
 PM2_NAME=dj-vault
 BACKUP_DIR=/var/backups/dj-vault/<confirmed-timestamp>
 PREVIOUS_REVISION="$(cat "$BACKUP_DIR/git-revision.txt")"
+ROLLBACK_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
 test -f "$BACKUP_DIR/.env"
 test -n "$PREVIOUS_REVISION"
+(cd "$BACKUP_DIR" && sha256sum --check SHA256SUMS)
 pm2 stop "$PM2_NAME"
 
+test -z "$(git status --porcelain)"
 git checkout --detach "$PREVIOUS_REVISION"
+test "$(git rev-parse HEAD)" = "$PREVIOUS_REVISION"
+test -z "$(git status --porcelain)"
 cp --preserve=mode,timestamps "$BACKUP_DIR/.env" "$APP_DIR/.env"
 
 RESTORED_DATA_DIRECTORY="$(sed -n 's/^DATA_DIRECTORY=//p' "$APP_DIR/.env" | tail -n 1)"
 if test -f "$BACKUP_DIR/database-directory.tar.gz"; then
   test -n "$RESTORED_DATA_DIRECTORY"
   if test -e "$RESTORED_DATA_DIRECTORY"; then
-    sudo mv "$RESTORED_DATA_DIRECTORY" "${RESTORED_DATA_DIRECTORY}.failed-$STAMP"
+    sudo mv "$RESTORED_DATA_DIRECTORY" "${RESTORED_DATA_DIRECTORY}.failed-$ROLLBACK_STAMP"
   fi
   sudo tar -C "$(dirname "$RESTORED_DATA_DIRECTORY")" -xzf "$BACKUP_DIR/database-directory.tar.gz"
 fi
 
 if test -f "$BACKUP_DIR/legacy-dot-data.tar.gz"; then
-  tar -tzf "$BACKUP_DIR/legacy-dot-data.tar.gz" > /dev/null
+  if test -e "$APP_DIR/.data"; then
+    mv "$APP_DIR/.data" "$APP_DIR/.data.failed-$ROLLBACK_STAMP"
+  fi
+  tar -C "$APP_DIR" -xzf "$BACKUP_DIR/legacy-dot-data.tar.gz"
 fi
 
 npm ci
@@ -261,6 +270,6 @@ pm2 startOrReload ecosystem.config.cjs --only "$PM2_NAME" --update-env
 pm2 status "$PM2_NAME"
 ```
 
-The original `$APP_DIR/.data` is never written during deployment or rollback. Its backup remains available and is checked for readability; restoring the prior `.env` and Git revision returns the older release to the original JSON source. If a pre-existing persistent directory was backed up, rollback moves the failed one aside rather than deleting it, then restores the archive.
+Deployment never writes the original `$APP_DIR/.data`. Rollback verifies every backup checksum, moves the failed data aside without deleting it, and restores both the original JSON snapshot and any pre-existing persistent database directory. The checked-out revision must exactly match the recorded pre-release SHA before the older process starts.
 
 Preserve `$BACKUP_DIR`, record only non-sensitive failure output, and obtain a new explicit approval before attempting the release again.
