@@ -16,6 +16,7 @@ import {
   resolveSessionUser,
   verifySessionToken,
 } from "../lib/auth/session.ts";
+import { register as registerInstrumentation } from "../instrumentation.ts";
 
 const legacyFiles = {
   "collections.json": "[]\n",
@@ -53,6 +54,33 @@ test("production requires an AUTH_SECRET of at least 32 characters while develop
     /AUTH_SECRET must be at least 32 characters in production/,
   );
   assert.equal(getSessionSecret("development", undefined).length >= 32, true);
+});
+
+test("the Node.js server validates AUTH_SECRET during startup", async () => {
+  const originalEnvironment = process.env.NODE_ENV;
+  const originalRuntime = process.env.NEXT_RUNTIME;
+  const originalSecret = process.env.AUTH_SECRET;
+
+  process.env.NODE_ENV = "production";
+  process.env.NEXT_RUNTIME = "nodejs";
+  delete process.env.AUTH_SECRET;
+
+  try {
+    await assert.rejects(
+      registerInstrumentation(),
+      /AUTH_SECRET must be at least 32 characters in production/,
+    );
+
+    process.env.AUTH_SECRET = "a-production-secret-that-is-long-enough";
+    await registerInstrumentation();
+  } finally {
+    if (originalEnvironment === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = originalEnvironment;
+    if (originalRuntime === undefined) delete process.env.NEXT_RUNTIME;
+    else process.env.NEXT_RUNTIME = originalRuntime;
+    if (originalSecret === undefined) delete process.env.AUTH_SECRET;
+    else process.env.AUTH_SECRET = originalSecret;
+  }
 });
 
 test("a current session version resolves and a newer version revokes the token", async (t) => {

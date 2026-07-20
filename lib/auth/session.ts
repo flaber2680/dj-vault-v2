@@ -1,5 +1,8 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { getSessionSecret } from "@/lib/auth/secret";
 import { findUserForSession } from "@/lib/auth/store";
+
+export { getSessionSecret } from "@/lib/auth/secret";
 
 export const SESSION_COOKIE = "djv_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
@@ -17,25 +20,6 @@ export type SessionPayload = {
   sessionVersion: number;
   expiresAt: number;
 };
-
-const localDevelopmentSecret = "dj-vault-local-development-secret-not-for-production";
-
-export function getSessionSecret(
-  environment = process.env.NODE_ENV,
-  configuredSecret = process.env.AUTH_SECRET,
-) {
-  const secret = configuredSecret?.trim();
-
-  if (secret && secret.length >= 32) {
-    return secret;
-  }
-
-  if (environment === "production") {
-    throw new Error("AUTH_SECRET must be at least 32 characters in production.");
-  }
-
-  return localDevelopmentSecret;
-}
 
 function signPayload(payload: string) {
   return createHmac("sha256", getSessionSecret()).update(payload).digest("hex");

@@ -6,6 +6,8 @@ This runbook is for `/var/www/dj-vault-v2` and PM2 process `dj-vault`. Run it on
 
 Production deployment requires explicit approval after the verified code has been pushed and after the backup location and free disk space have been confirmed. Never deploy, edit, or delete legacy JSON until those conditions are met.
 
+The session payload format changes in this release. Existing signed-in users will be logged out once and must sign in again after deployment; their accounts and paid access are not changed.
+
 The SSH user must own the application checkout and PM2 process. `sudo` is used only for the persistent data and backup directories.
 
 ## Environment and Nginx
