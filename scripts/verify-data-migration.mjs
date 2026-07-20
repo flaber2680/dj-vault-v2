@@ -6,6 +6,7 @@ import { getDataDirectory } from "../lib/database/config.ts";
 import {
   getDatabaseImportCounts,
   getExpectedImportCounts,
+  getImportedPaymentIds,
   readLegacyData,
 } from "../lib/database/import-legacy.ts";
 
@@ -67,10 +68,7 @@ function eventValue(userId, archiveId, downloadedAt, ipAddress, userAgent) {
 }
 
 function identityChecks(db, data) {
-  const expectedPaymentIds = new Set([
-    ...data.payments.map((payment) => payment.id),
-    ...data.users.flatMap((user) => user.activatedPaymentIds ?? []),
-  ]);
+  const expectedPaymentIds = getImportedPaymentIds(data);
 
   return [
     ["users", columnValues(db, "SELECT id FROM users"), data.users.map((user) => user.id)],
@@ -84,7 +82,7 @@ function identityChecks(db, data) {
         user.providers.map((provider) => `${user.id}\0${provider}`),
       ),
     ],
-    ["activatedPayments", columnValues(db, "SELECT id FROM activated_payments"), [...expectedPaymentIds]],
+    ["activatedPayments", columnValues(db, "SELECT id FROM activated_payments"), expectedPaymentIds],
     [
       "promoCodes",
       columnValues(db, "SELECT id FROM promo_codes"),

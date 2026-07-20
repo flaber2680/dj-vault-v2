@@ -357,7 +357,7 @@ function getSyntheticActivationIds(data: LegacyData): string[] {
   )];
 }
 
-function getImportedPaymentIds(data: LegacyData): string[] {
+export function getImportedPaymentIds(data: LegacyData): string[] {
   return [...new Set([
     ...data.payments.map((payment) => payment.id),
     ...getSyntheticActivationIds(data),
