@@ -80,8 +80,8 @@ export function AuthCard({
               name="password"
               type="password"
               autoComplete={isRegister ? "new-password" : "current-password"}
-              placeholder="Минимум 6 символов"
-              minLength={6}
+              placeholder="Минимум 10 символов"
+              minLength={10}
               required
             />
           </label>

@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { resetPasswordAction } from "@/app/auth/actions";
 
+export const metadata = {
+  title: "Новый пароль",
+  robots: { index: false, follow: false },
+};
+
 type ResetPasswordPageProps = {
   searchParams?: Promise<{
     token?: string;
@@ -11,7 +16,8 @@ type ResetPasswordPageProps = {
 const errorMessages: Record<string, string> = {
   invalid:
     "Ссылка недействительна или устарела. Запросите восстановление еще раз.",
-  short_password: "Пароль должен быть не короче 6 символов.",
+  short_password: "Пароль должен быть не короче 10 символов.",
+  rate_limited: "Слишком много попыток. Подождите немного и попробуйте снова.",
 };
 
 export default async function ResetPasswordPage({
@@ -52,8 +58,8 @@ export default async function ResetPasswordPage({
                 name="password"
                 type="password"
                 autoComplete="new-password"
-                placeholder="Минимум 6 символов"
-                minLength={6}
+                placeholder="Минимум 10 символов"
+                minLength={10}
                 required
               />
             </label>

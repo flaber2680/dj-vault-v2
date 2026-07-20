@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { requestPasswordResetAction } from "@/app/auth/actions";
 
+export const metadata = {
+  title: "Восстановление пароля",
+  robots: { index: false, follow: false },
+};
+
 type ForgotPasswordPageProps = {
   searchParams?: Promise<{
     email?: string;
+    error?: string;
     sent?: string;
   }>;
+};
+
+const errorMessages: Record<string, string> = {
+  rate_limited: "Слишком много попыток. Подождите немного и попробуйте снова.",
 };
 
 export default async function ForgotPasswordPage({
@@ -14,6 +24,7 @@ export default async function ForgotPasswordPage({
   const params = searchParams ? await searchParams : {};
   const isSent = params.sent === "1";
   const email = params.email ?? "";
+  const error = params.error ? errorMessages[params.error] : undefined;
 
   return (
     <section className="auth-page">
@@ -34,6 +45,8 @@ export default async function ForgotPasswordPage({
             ? "Если аккаунт с такой почтой есть, мы отправили ссылку для восстановления пароля."
             : "Укажите почту аккаунта. Мы отправим ссылку, по которой можно задать новый пароль."}
         </p>
+
+        {error ? <p className="auth-error">{error}</p> : null}
 
         {isSent ? (
           <>

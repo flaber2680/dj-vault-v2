@@ -12,6 +12,11 @@ import { getCollections, getDemoCollection } from "@/lib/content/collections";
 import { getDownloadRecords } from "@/lib/downloads/store";
 import { getPromoCodeDashboard } from "@/lib/referrals/store";
 
+export const metadata = {
+  title: "Администрирование",
+  robots: { index: false, follow: false },
+};
+
 type AdminPageProps = {
   searchParams?: Promise<{
     section?: string;

@@ -5,6 +5,11 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import { normalizeAuthReturnPath } from "@/lib/auth/return-path";
 
+export const metadata = {
+  title: "Регистрация",
+  robots: { index: false, follow: false },
+};
+
 type RegisterPageProps = {
   searchParams?: Promise<{
     error?: string;
@@ -14,12 +19,13 @@ type RegisterPageProps = {
 
 const errorMessages: Record<string, string> = {
   invalid_register:
-    "Введите корректную почту и пароль минимум из 6 символов.",
+    "Введите корректную почту и пароль минимум из 10 символов.",
   user_exists:
     "Аккаунт с этой почтой уже есть. Войдите или используйте другую почту.",
   invalid_promo:
     "Такой промокод не найден или больше не активен. Проверьте код или оставьте поле пустым.",
   unknown: "Не получилось создать доступ. Попробуйте еще раз.",
+  rate_limited: "Слишком много попыток. Подождите немного и попробуйте снова.",
 };
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {

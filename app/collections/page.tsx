@@ -16,6 +16,10 @@ import {
   formatReleaseCount,
 } from "@/lib/content/collection-archive";
 
+export const metadata = {
+  title: "Подборки",
+};
+
 type CollectionsPageProps = {
   searchParams?: Promise<{
     collection?: string;

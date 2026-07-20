@@ -4,6 +4,11 @@ import { logout } from "@/app/auth/actions";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 
+export const metadata = {
+  title: "Личный кабинет",
+  robots: { index: false, follow: false },
+};
+
 const dayInMs = 24 * 60 * 60 * 1000;
 
 function getDaysLeft(expiresAt?: string) {

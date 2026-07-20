@@ -6,6 +6,10 @@ import { LibraryBlocks } from "@/components/sections/LibraryBlocks";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 
+export const metadata = {
+  title: "DJ Vault - клуб для диджеев",
+};
+
 export default async function Home() {
   const user = await getCurrentUser();
 

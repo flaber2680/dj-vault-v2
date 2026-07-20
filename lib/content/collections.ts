@@ -1,6 +1,9 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
-import { formatBytes, getS3ObjectMetadata } from "@/lib/storage/s3";
+import {
+  findCollectionRecord,
+  getCollectionRecords,
+  saveCollectionRecord,
+  type CollectionRecord,
+} from "../database/repositories/collections.ts";
 
 export type CollectionItem = {
   number: string;
@@ -30,9 +33,6 @@ export type CollectionInput = {
 };
 
 export const DEMO_COLLECTION_NUMBER = "demo";
-
-const dataDirectory = path.join(process.cwd(), ".data");
-const collectionsFile = path.join(dataDirectory, "collections.json");
 
 export const latestGenres = [
   "Afro House",
@@ -107,6 +107,22 @@ export const collections: CollectionItem[] = [
   },
 ];
 
+function formatBytes(bytes?: number) {
+  if (!bytes || bytes <= 0) {
+    return "";
+  }
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
+}
+
 function normalizeCollectionNumber(number: string) {
   return number.trim().replace(/^#/, "").toLowerCase();
 }
@@ -147,14 +163,13 @@ function normalizeCollection(input: CollectionInput): CollectionItem {
 
 async function enrichCollectionFromS3(input: CollectionInput) {
   const s3Key = input.s3Key?.trim();
-
   if (!s3Key) {
     return input;
   }
 
   try {
+    const { getS3ObjectMetadata } = await import("@/lib/storage/s3");
     const metadata = await getS3ObjectMetadata(s3Key);
-
     if (!metadata?.contentLength) {
       return input;
     }
@@ -169,48 +184,29 @@ async function enrichCollectionFromS3(input: CollectionInput) {
   }
 }
 
+function toCollectionItem(record: CollectionRecord): CollectionItem {
+  const legacyDownloadUrl = record.legacyDownloadUrl?.trim();
+  const collection = {
+    ...record,
+    s3Key:
+      record.s3Key?.trim() ||
+      (legacyDownloadUrl && !/^https?:\/\//i.test(legacyDownloadUrl)
+        ? legacyDownloadUrl
+        : undefined),
+  };
+  delete collection.legacyDownloadUrl;
+  return collection;
+}
+
 function sortCollections(items: CollectionItem[]) {
   return [...items].sort((left, right) => {
     const leftNumber = Number(left.number);
     const rightNumber = Number(right.number);
-
     if (!Number.isNaN(leftNumber) && !Number.isNaN(rightNumber)) {
       return rightNumber - leftNumber;
     }
-
     return right.number.localeCompare(left.number, "ru");
   });
-}
-
-async function readStoredCollections(): Promise<CollectionItem[]> {
-  try {
-    const raw = await readFile(collectionsFile, "utf8");
-    const parsed = JSON.parse(raw) as CollectionInput[];
-
-    return parsed.map(normalizeCollection);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return [];
-    }
-
-    throw error;
-  }
-}
-
-async function writeStoredCollections(items: CollectionItem[]) {
-  await mkdir(dataDirectory, { recursive: true });
-  await writeFile(collectionsFile, JSON.stringify(items, null, 2), "utf8");
-}
-
-async function getMergedCollections() {
-  const storedCollections = await readStoredCollections();
-  const byNumber = new Map<string, CollectionItem>();
-
-  for (const collection of storedCollections) {
-    byNumber.set(collection.number, collection);
-  }
-
-  return Array.from(byNumber.values());
 }
 
 export async function getCollections(
@@ -218,52 +214,37 @@ export async function getCollections(
     includeInactive?: boolean;
   } = {},
 ) {
-  const mergedCollections = await getMergedCollections();
-
   return sortCollections(
-    mergedCollections.filter(
-      (collection) =>
-        collection.number !== DEMO_COLLECTION_NUMBER &&
-        (options.includeInactive || collection.isActive),
-    ),
+    getCollectionRecords()
+      .map(toCollectionItem)
+      .filter(
+        (collection) =>
+          collection.number !== DEMO_COLLECTION_NUMBER &&
+          (options.includeInactive || collection.isActive),
+      ),
   );
 }
 
 export async function getDemoCollection() {
-  const storedCollections = await readStoredCollections();
-
-  return (
-    storedCollections.find(
-      (collection) => collection.number === DEMO_COLLECTION_NUMBER,
-    ) ?? demoCollection
-  );
+  const collection = findCollectionRecord(DEMO_COLLECTION_NUMBER);
+  return collection ? toCollectionItem(collection) : demoCollection;
 }
 
 export async function findCollectionByNumber(number: string) {
   const normalizedNumber = normalizeCollectionNumber(number);
-
   if (normalizedNumber === DEMO_COLLECTION_NUMBER) {
     return getDemoCollection();
   }
 
-  const mergedCollections = await getMergedCollections();
-
-  return (
-    mergedCollections.find(
-      (collection) => collection.number === normalizedNumber,
-    ) ?? null
-  );
+  const collection = findCollectionRecord(normalizedNumber);
+  return collection ? toCollectionItem(collection) : null;
 }
 
 export async function saveCollection(input: CollectionInput) {
   const collection = normalizeCollection(await enrichCollectionFromS3(input));
-  const storedCollections = await readStoredCollections();
-  const nextCollections = storedCollections.filter(
-    (item) => item.number !== collection.number,
+  const legacyDownloadUrl = input.downloadUrl?.trim() || undefined;
+
+  return toCollectionItem(
+    saveCollectionRecord({ ...collection, legacyDownloadUrl }),
   );
-
-  nextCollections.push(collection);
-  await writeStoredCollections(sortCollections(nextCollections));
-
-  return collection;
 }

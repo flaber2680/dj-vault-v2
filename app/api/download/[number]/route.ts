@@ -11,6 +11,7 @@ import {
   getS3ConfigStatus,
   getS3ObjectMetadata,
 } from "@/lib/storage/s3";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 type RouteContext = {
   params: Promise<{
@@ -71,7 +72,14 @@ function serializeError(error: unknown) {
   return error;
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET() {
+  return NextResponse.json(
+    { error: "method_not_allowed" },
+    { status: 405, headers: { Allow: "POST" } },
+  );
+}
+
+export async function POST(request: NextRequest, context: RouteContext) {
   const wantsJson = request.nextUrl.searchParams.get("format") === "json";
   const { number } = await context.params;
   const collection = await findCollectionByNumber(number);
@@ -92,6 +100,23 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
   }
 
+  const rateLimit = consumeRateLimit({
+    scope: "download:user",
+    subject: user.id,
+    limit: 30,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "rate_limit" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   if (!collection.s3Key) {
     if (wantsJson) {
       return NextResponse.json({ error: "not_configured" }, { status: 409 });
@@ -99,12 +124,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return redirectToCollections(request, "not_configured", collection.number);
   }
 
-  let signedUrl: string;
+  if (!getS3ConfigStatus().configured) {
+    if (wantsJson) {
+      return NextResponse.json({ error: "not_configured" }, { status: 409 });
+    }
+    return redirectToCollections(request, "not_configured", collection.number);
+  }
 
   try {
-    signedUrl = createSignedDownloadUrl(collection.s3Key);
+    await getS3ObjectMetadata(collection.s3Key);
   } catch (error) {
-    console.error("[download] failed to create S3 signed URL", {
+    console.error("[download] S3 metadata check failed", {
       collectionNumber: collection.number,
       s3Key: collection.s3Key,
       s3: getS3ConfigStatus(),
@@ -117,11 +147,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return redirectToCollections(request, "storage", collection.number);
   }
 
+  let signedUrl: string;
+
   try {
-    await getS3ObjectMetadata(collection.s3Key);
+    signedUrl = createSignedDownloadUrl(collection.s3Key);
   } catch (error) {
     console.error(
-      "[download] S3 metadata check failed; redirecting to signed URL anyway",
+      "[download] failed to create S3 signed URL",
       {
         collectionNumber: collection.number,
         s3Key: collection.s3Key,
@@ -129,6 +161,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
         error: serializeError(error),
       },
     );
+
+    if (wantsJson) {
+      return NextResponse.json({ error: "storage" }, { status: 500 });
+    }
+    return redirectToCollections(request, "storage", collection.number);
   }
 
   const download = await registerDownloadAttempt({

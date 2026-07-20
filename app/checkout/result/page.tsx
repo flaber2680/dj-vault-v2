@@ -7,6 +7,11 @@ import { activateYooKassaPayment } from "@/lib/payments/activate";
 import { findStoredPaymentById } from "@/lib/payments/store";
 import { getYooKassaPayment } from "@/lib/payments/yookassa";
 
+export const metadata = {
+  title: "Статус оплаты",
+  robots: { index: false, follow: false },
+};
+
 type CheckoutResultPageProps = {
   searchParams?: Promise<{
     payment?: string;

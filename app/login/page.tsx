@@ -5,6 +5,11 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import { normalizeAuthReturnPath } from "@/lib/auth/return-path";
 
+export const metadata = {
+  title: "Вход",
+  robots: { index: false, follow: false },
+};
+
 type LoginPageProps = {
   searchParams?: Promise<{
     error?: string;
@@ -16,6 +21,7 @@ type LoginPageProps = {
 const errorMessages: Record<string, string> = {
   invalid_login:
     "Почта или пароль не совпали. Проверьте данные и попробуйте еще раз.",
+  rate_limited: "Слишком много попыток. Подождите немного и попробуйте снова.",
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {

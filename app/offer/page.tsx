@@ -3,6 +3,10 @@ import { ScrollEffects } from "@/components/ScrollEffects";
 import { LegalDocument } from "@/components/legal/LegalDocument";
 import { legalPages } from "@/lib/content/legal";
 
+export const metadata = {
+  title: "Публичная оферта",
+};
+
 export default function OfferPage() {
   return (
     <main className="page">

@@ -7,6 +7,11 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import { getCheckoutPackage } from "@/lib/payments/packages";
 
+export const metadata = {
+  title: "Оформление подписки",
+  robots: { index: false, follow: false },
+};
+
 type CheckoutPageProps = {
   searchParams?: Promise<{
     error?: string;
