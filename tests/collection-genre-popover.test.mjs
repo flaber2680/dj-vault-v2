@@ -24,5 +24,9 @@ test("keeps the active collection card above its neighboring cards", async () =>
     styles,
     /\.collection-release-card:hover,\s*\.collection-release-card:focus-within \{[^}]*?z-index: 1;/,
   );
+  assert.doesNotMatch(
+    styles,
+    /\.demo-card-more-control:focus-within \.demo-card-more-popover/,
+  );
   assert.doesNotMatch(styles, /\.demo-card-more-popover \{[^}]*?box-shadow:/);
 });
