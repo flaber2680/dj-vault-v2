@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import { headers } from "next/headers";
 
 import { FallingCube } from "@/components/sections/FallingCube";
 import { getCurrentUser } from "@/lib/auth/session";
@@ -9,11 +10,14 @@ const revealDelay = (value: string) => ({
 }) as CSSProperties;
 
 export async function Hero() {
-  const user = await getCurrentUser();
+  const [user, requestHeaders] = await Promise.all([getCurrentUser(), headers()]);
+  const isMobileUserAgent = /iPhone|iPad|iPod|Android.*Mobile|Windows Phone/i.test(
+    requestHeaders.get("user-agent") ?? "",
+  );
 
   return (
     <>
-      <FallingCube />
+      {!isMobileUserAgent ? <FallingCube /> : null}
 
       <section className="hero">
         <div className="hero-container">
