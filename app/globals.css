@@ -3646,9 +3646,19 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   }
 }
 
-@media (hover: none), (pointer: coarse), (max-width: 768px) {
+@media (hover: none), (pointer: coarse), (max-width: 900px) {
   .cursor-trail {
     display: none;
+  }
+
+  .falling-cube {
+    display: none;
+  }
+
+  body.is-scrolled .header {
+    background: #000;
+    box-shadow: none;
+    backdrop-filter: none;
   }
 
   .collection-download-hint {

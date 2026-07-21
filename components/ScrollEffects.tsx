@@ -13,7 +13,8 @@ export function ScrollEffects() {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    const isTouchDevice =
+    const usesStaticMobilePresentation =
+      window.matchMedia("(max-width: 900px)").matches ||
       window.matchMedia("(hover: none)").matches ||
       window.matchMedia("(pointer: coarse)").matches;
 
@@ -21,25 +22,23 @@ export function ScrollEffects() {
       body.classList.toggle("is-scrolled", window.scrollY > 8);
     };
 
-    body.classList.add("reveal-ready");
-    updateHeader();
-
-    window.addEventListener("scroll", updateHeader, { passive: true });
-
-    if (prefersReducedMotion || isTouchDevice) {
+    if (prefersReducedMotion || usesStaticMobilePresentation) {
       items.forEach((item) => {
         item.classList.remove(revealPendingClass);
-        item.classList.add(revealVisibleClass);
+        item.classList.remove(revealVisibleClass);
       });
 
       return () => {
-        window.removeEventListener("scroll", updateHeader);
-        body.classList.remove("is-scrolled", "reveal-ready");
         items.forEach((item) => {
           item.classList.remove(revealPendingClass, revealVisibleClass);
         });
       };
     }
+
+    body.classList.add("reveal-ready");
+    updateHeader();
+
+    window.addEventListener("scroll", updateHeader, { passive: true });
 
     const observer = new IntersectionObserver(
       (entries) => {
