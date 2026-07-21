@@ -2,18 +2,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-test("keeps the mobile hidden-genre popover inside the collection card", async () => {
-  const styles = await readFile(
-    new URL("../app/globals.css", import.meta.url),
-    "utf8",
-  );
+test("renders hidden genres through the responsive genre control", async () => {
+  const [page, control, styles] = await Promise.all([
+    readFile(new URL("../app/collections/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../components/collections/GenreMore.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+  ]);
 
+  assert.match(page, /import \{ GenreMore \} from "@\/components\/collections\/GenreMore";/);
+  assert.equal((page.match(/<GenreMore/g) ?? []).length, 2);
+  assert.match(control, /useState/);
+  assert.match(control, /aria-expanded=\{isOpen\}/);
   assert.match(
     styles,
-    /@media \(hover: none\) and \(pointer: coarse\) \{[\s\S]*?\.demo-card-more-popover \{[\s\S]*?left: 0;[\s\S]*?right: 0;[\s\S]*?width: auto;/,
+    /@media \(hover: none\) and \(pointer: coarse\) \{[\s\S]*?\.demo-card-more-control\.is-open \{[\s\S]*?flex-basis: 100%;/,
   );
   assert.match(
     styles,
-    /@media \(hover: none\) and \(pointer: coarse\) \{[\s\S]*?\.demo-card-tip-strip:has\(\.demo-card-more:focus\) \{[\s\S]*?padding-bottom:/,
+    /\.demo-card-more-control\.is-open \.demo-card-more-popover \{[\s\S]*?position: static;/,
   );
 });

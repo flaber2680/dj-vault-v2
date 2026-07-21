@@ -1585,11 +1585,17 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 }
 
 .demo-card-more {
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  outline: none;
+}
+
+.demo-card-more-control {
   position: relative;
   z-index: 2;
-  cursor: default;
-  color: #fff;
-  outline: none;
+  display: inline-flex;
 }
 
 .demo-card-more:focus-visible {
@@ -1628,9 +1634,9 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   transition: opacity .16s ease, transform .16s ease;
 }
 
-.demo-card-more:hover .demo-card-more-popover,
-.demo-card-more:focus .demo-card-more-popover,
-.demo-card-more:focus-within .demo-card-more-popover {
+.demo-card-more-control:hover .demo-card-more-popover,
+.demo-card-more-control:focus-within .demo-card-more-popover,
+.demo-card-more-control.is-open .demo-card-more-popover {
   opacity: 1;
   transform: translateY(0);
 }
@@ -3647,21 +3653,21 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .demo-card-more {
-    position: static;
+  .demo-card-more-control.is-open {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
-  .demo-card-more-popover {
-    left: 0;
-    right: 0;
-    top: calc(100% + 10px);
-    width: auto;
+  .demo-card-more-control.is-open .demo-card-more-popover {
+    position: static;
+    width: 100%;
     min-width: 0;
     max-width: none;
-  }
-
-  .demo-card-tip-strip:has(.demo-card-more:focus) {
-    padding-bottom: 360px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
   }
 }
 

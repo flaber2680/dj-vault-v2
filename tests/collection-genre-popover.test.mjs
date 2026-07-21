@@ -10,7 +10,7 @@ test("keeps the active collection card above its neighboring cards", async () =>
 
   assert.match(
     styles,
-    /\.demo-card-more \{[^}]*?position: relative;[^}]*?z-index: 2;/,
+    /\.demo-card-more-control \{[^}]*?position: relative;[^}]*?z-index: 2;/,
   );
   assert.match(
     styles,

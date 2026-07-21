@@ -1,6 +1,7 @@
 import { Header } from "@/components/layout/Header";
 import { ScrollEffects } from "@/components/ScrollEffects";
 import { CollectionDownloadAction } from "@/components/collections/CollectionDownloadAction";
+import { GenreMore } from "@/components/collections/GenreMore";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import {
@@ -160,24 +161,7 @@ export default async function CollectionsPage({
                     </span>
                   ))}
                   {hiddenDemoGenreTips.length > 0 ? (
-                    <span
-                      className="demo-card-more"
-                      tabIndex={0}
-                      aria-label={`Еще ${hiddenDemoGenreTips.length} скрытых стилей`}
-                    >
-                      +{hiddenDemoGenreTips.length}
-                      <span className="demo-card-more-popover" role="tooltip">
-                        {hiddenDemoGenreTips.map((tip) => (
-                          <span
-                            className="demo-card-more-item"
-                            key={`${tip.name}-${tip.count ?? "none"}-hidden`}
-                          >
-                            <span>{tip.name}</span>
-                            {tip.count ? <strong>{tip.count}</strong> : null}
-                          </span>
-                        ))}
-                      </span>
-                    </span>
+                    <GenreMore genres={hiddenDemoGenreTips} />
                   ) : null}
                 </div>
 
@@ -299,29 +283,7 @@ export default async function CollectionsPage({
                             </span>
                           ))}
                           {hiddenGenreTips.length > 0 ? (
-                            <span
-                              className="demo-card-more"
-                              tabIndex={0}
-                              aria-label={`Еще ${hiddenGenreTips.length} скрытых стилей`}
-                            >
-                              +{hiddenGenreTips.length}
-                              <span
-                                className="demo-card-more-popover"
-                                role="tooltip"
-                              >
-                                {hiddenGenreTips.map((tip) => (
-                                  <span
-                                    className="demo-card-more-item"
-                                    key={`${collection.number}-${tip.name}-${tip.count ?? "none"}-hidden`}
-                                  >
-                                    <span>{tip.name}</span>
-                                    {tip.count ? (
-                                      <strong>{tip.count}</strong>
-                                    ) : null}
-                                  </span>
-                                ))}
-                              </span>
-                            </span>
+                            <GenreMore genres={hiddenGenreTips} />
                           ) : null}
                         </div>
 
