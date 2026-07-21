@@ -28,5 +28,6 @@ test("keeps the active collection card above its neighboring cards", async () =>
     styles,
     /\.demo-card-more-control:focus-within \.demo-card-more-popover/,
   );
+  assert.doesNotMatch(styles, /\.demo-card-more-control\.is-open/);
   assert.doesNotMatch(styles, /\.demo-card-more-popover \{[^}]*?box-shadow:/);
 });

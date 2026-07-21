@@ -1587,19 +1587,13 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 .demo-card-more {
   background: transparent;
   color: #fff;
-  cursor: pointer;
-  font-family: inherit;
-  outline: none;
+  cursor: default;
 }
 
 .demo-card-more-control {
   position: relative;
   z-index: 2;
   display: inline-flex;
-}
-
-.demo-card-more:focus-visible {
-  border-color: rgba(255, 255, 255, .46);
 }
 
 .demo-card-tip-strip {
@@ -1634,8 +1628,7 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   transition: opacity .16s ease, transform .16s ease;
 }
 
-.demo-card-more-control:hover .demo-card-more-popover,
-.demo-card-more-control.is-open .demo-card-more-popover {
+.demo-card-more-control:hover .demo-card-more-popover {
   opacity: 1;
   transform: translateY(0);
 }
@@ -3652,20 +3645,14 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 }
 
 @media (hover: none) and (pointer: coarse) {
-  .demo-card-more-control:not(.is-open) .demo-card-more-popover {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(4px);
-  }
-
-  .demo-card-more-control.is-open {
+  .demo-card-more-control {
     flex-basis: 100%;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
   }
 
-  .demo-card-more-control.is-open .demo-card-more-popover {
+  .demo-card-more-popover {
     position: static;
     width: 100%;
     min-width: 0;
