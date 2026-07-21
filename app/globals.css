@@ -3653,6 +3653,12 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 }
 
 @media (hover: none) and (pointer: coarse) {
+  .demo-card-more-control:not(.is-open) .demo-card-more-popover {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(4px);
+  }
+
   .demo-card-more-control.is-open {
     flex-basis: 100%;
     display: flex;

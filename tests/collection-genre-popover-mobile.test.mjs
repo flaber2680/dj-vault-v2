@@ -21,4 +21,8 @@ test("renders hidden genres through the responsive genre control", async () => {
     styles,
     /\.demo-card-more-control\.is-open \.demo-card-more-popover \{[\s\S]*?position: static;/,
   );
+  assert.match(
+    styles,
+    /\.demo-card-more-control:not\(\.is-open\) \.demo-card-more-popover \{[\s\S]*?opacity: 0;[\s\S]*?pointer-events: none;/,
+  );
 });
