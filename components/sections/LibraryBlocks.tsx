@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
-import { getCollections, latestGenres } from "@/lib/content/collections";
+import { getCollections, getDemoCollection } from "@/lib/content/collections";
 import { accessPackageList } from "@/lib/content/plans";
 import { formatTrackCount } from "@/lib/content/track-count";
 
@@ -67,7 +67,11 @@ const partyMoments = [
 export async function LibraryBlocks() {
   const user = await getCurrentUser();
   const collections = await getCollections();
-  const latestCollection = collections[0];
+  const demoCollection = await getDemoCollection();
+  const demoGenres = demoCollection.genres
+    .split("·")
+    .map((genre) => genre.trim())
+    .filter(Boolean);
 
   const hasPaidPlan = user ? hasClubAccess(user) : false;
   const isGuest = !user;
@@ -272,26 +276,24 @@ export async function LibraryBlocks() {
             </Link>
           </div>
 
-          {latestCollection ? (
-            <article className="release-card" data-reveal>
-              <div className="release-card-head">
-                <span className="release-label">Последний выпуск</span>
-                <span className="release-meta">
-                  {latestCollection.date} · {latestCollection.size}
-                </span>
-              </div>
+          <article className="release-card" data-reveal>
+            <div className="release-card-head">
+              <span className="release-label">Демо-подборка</span>
+              <span className="release-meta">
+                {demoCollection.date} · {demoCollection.size}
+              </span>
+            </div>
 
-              <h3>Подборка #{latestCollection.number}</h3>
+            <h3>Демо-подборка</h3>
 
-              <div className="genre-list">
-                {latestGenres.map((genre) => (
-                  <span key={genre}>{genre}</span>
-                ))}
-              </div>
+            <div className="genre-list">
+              {demoGenres.map((genre) => (
+                <span key={genre}>{genre}</span>
+              ))}
+            </div>
 
-              <div className="release-lock">Доступ по членству</div>
-            </article>
-          ) : null}
+            <div className="release-lock">Доступ после регистрации</div>
+          </article>
         </section>
       ) : null}
 
