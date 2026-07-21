@@ -148,6 +148,10 @@ body.is-scrolled .header {
   gap: 10px;
 }
 
+.header-admin-mobile {
+  display: none;
+}
+
 .header-plan {
   height: 34px;
   padding: 0 12px;
@@ -3277,6 +3281,25 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 @media (max-width: 900px) {
   .header-nav {
     display: none;
+  }
+
+  .header-actions.is-admin .header-plan {
+    display: none;
+  }
+
+  .header-admin-mobile {
+    height: 34px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, .78);
+    border: 1px solid rgba(255, 255, 255, .28);
+    font-size: 10px;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .header {
