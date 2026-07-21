@@ -3646,6 +3646,25 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   }
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .demo-card-more {
+    position: static;
+  }
+
+  .demo-card-more-popover {
+    left: 0;
+    right: 0;
+    top: calc(100% + 10px);
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .demo-card-tip-strip:has(.demo-card-more:focus) {
+    padding-bottom: 360px;
+  }
+}
+
 @media (hover: none), (pointer: coarse), (max-width: 768px) {
   .cursor-trail {
     display: none;
