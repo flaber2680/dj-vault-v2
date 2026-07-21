@@ -11,9 +11,10 @@ const revealDelay = (value: string) => ({
 
 export async function Hero() {
   const [user, requestHeaders] = await Promise.all([getCurrentUser(), headers()]);
-  const isMobileUserAgent = /iPhone|iPad|iPod|Android.*Mobile|Windows Phone/i.test(
-    requestHeaders.get("user-agent") ?? "",
-  );
+  const isMobileUserAgent =
+    /iPhone|iPad|iPod|Android.*Mobile|Windows Phone|Macintosh.*Mobile/i.test(
+      requestHeaders.get("user-agent") ?? "",
+    );
 
   return (
     <>

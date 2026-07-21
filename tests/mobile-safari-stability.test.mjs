@@ -14,10 +14,10 @@ test("uses a static presentation for narrow and touch-first viewports", async ()
   ]);
 
   assert.match(hero, /const isMobileUserAgent =/);
-  assert.match(hero, /iPhone\|iPad\|iPod/);
+  assert.match(hero, /Macintosh\.\*Mobile/);
   assert.match(hero, /!isMobileUserAgent \? <FallingCube \/> : null/);
-  assert.match(scrollEffects, /\(max-width: 900px\)/);
   assert.match(scrollEffects, /usesStaticMobilePresentation/);
+  assert.doesNotMatch(scrollEffects, /max-width: 900px/);
   assert.match(
     scrollEffects,
     /if \(usesStaticMobilePresentation\) \{[\s\S]*?\}\s*\n\s*body\.classList\.add\("reveal-ready"\)/,
@@ -26,8 +26,9 @@ test("uses a static presentation for narrow and touch-first viewports", async ()
   assert.match(fallingCube, /if \(shouldDisableEffects\) \{\s*return;\s*\}/);
   assert.match(
     styles,
-    /@media \(hover: none\), \(pointer: coarse\), \(max-width: 900px\)/,
+    /@media \(hover: none\), \(pointer: coarse\) \{/,
   );
+  assert.doesNotMatch(styles, /@media \(hover: none\), \(pointer: coarse\), \(max-width: 900px\)/);
   assert.match(
     styles,
     /body\.is-scrolled \.header \{[^}]*?backdrop-filter: none;/,

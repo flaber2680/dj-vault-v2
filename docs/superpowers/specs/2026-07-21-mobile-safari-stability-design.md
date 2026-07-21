@@ -6,7 +6,7 @@ Make the site responsive and reliable on iPhone Safari without changing the desk
 
 ## Decision
 
-At a viewport width of 900px or below, and for coarse-pointer devices, the site uses a static presentation:
+For touch-first devices, the site uses a static presentation. The server also omits the cube markup for iPhone, iPad, and iPadOS desktop-class mobile user agents so that the image is not preloaded.
 
 - the falling cube is not painted and does not attach scroll or resize work;
 - reveal animations never put content in a hidden or blurred state;

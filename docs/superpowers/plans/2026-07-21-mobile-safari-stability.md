@@ -10,10 +10,12 @@
 
 ## Global Constraints
 
-- Mobile guard: `(max-width: 900px)`, `(hover: none)`, or `(pointer: coarse)`.
+- Mobile guard: `(hover: none)` or `(pointer: coarse)`.
 - Preserve desktop cube, reveal transitions, and header treatment.
 - Do not add client-side dependencies.
 - Keep the login link as a normal Next.js `Link` to `/login`.
+
+**Implementation adjustment:** Review found that a 900px width guard would alter ordinary narrow desktop layouts. The implemented guard uses touch capabilities instead, and the server omits cube markup for Apple mobile user agents to avoid the image preload.
 
 ---
 

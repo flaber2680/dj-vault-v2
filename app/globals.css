@@ -3684,7 +3684,7 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   }
 }
 
-@media (hover: none), (pointer: coarse), (max-width: 900px) {
+@media (hover: none), (pointer: coarse) {
   .cursor-trail {
     display: none;
   }

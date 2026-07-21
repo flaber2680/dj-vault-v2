@@ -8,7 +8,6 @@ export function FallingCube() {
 
   useEffect(() => {
     const shouldDisableEffects =
-      window.matchMedia("(max-width: 900px)").matches ||
       window.matchMedia("(hover: none)").matches ||
       window.matchMedia("(pointer: coarse)").matches ||
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;

@@ -14,7 +14,6 @@ export function ScrollEffects() {
       "(prefers-reduced-motion: reduce)",
     ).matches;
     const usesStaticMobilePresentation =
-      window.matchMedia("(max-width: 900px)").matches ||
       window.matchMedia("(hover: none)").matches ||
       window.matchMedia("(pointer: coarse)").matches;
 
