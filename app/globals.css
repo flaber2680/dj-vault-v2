@@ -967,7 +967,7 @@ body:has(.admin-workspace-page) > .footer { display: none; }
 .admin-download-group-user { min-width: 0; display: grid; gap: 4px; }
 .admin-download-group-user strong { overflow: hidden; color: #fff; font-size: 11px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .admin-download-group-user small { overflow: hidden; color: rgba(255, 255, 255, .42); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.admin-download-group-records { margin-left: clamp(20px, 4vw, 64px); border-top: 1px solid rgba(255, 255, 255, .1); }
+.admin-download-group-records { border-top: 1px solid rgba(255, 255, 255, .1); }
 .admin-download-group-records > div { min-height: 44px; display: grid; grid-template-columns: minmax(120px, 1fr) auto; gap: 18px; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .admin-download-group-records > div:last-child { border-bottom: 0; }
 .admin-download-group-records strong { color: #fff; font-size: 11px; }
