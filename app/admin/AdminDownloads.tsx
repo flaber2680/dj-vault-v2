@@ -50,16 +50,17 @@ export function AdminDownloads({ records, users, query }: AdminDownloadsProps) {
           <details className="admin-download-group" key={group.userId} open={Boolean(query)}>
             <summary>
               <span className="admin-download-group-user"><strong>{group.user?.name ?? "Пользователь"}</strong><small>{group.user?.email ?? group.userId}</small></span>
-              <span>{group.records.length} архивов</span>
-              <span>{group.totalDownloads} скачиваний</span>
-              <time>{formatDate(group.records[0]?.downloadedAt)}</time>
+              <span className="admin-download-group-metrics">
+                <span>{group.records.length} архивов</span>
+                <span>{group.totalDownloads} скачиваний</span>
+                <time>{formatDate(group.records[0]?.downloadedAt)}</time>
+              </span>
             </summary>
             <div className="admin-download-group-records">
               {group.records.map((record) => (
                 <div key={`${record.userId}-${record.archiveId}`}>
                   <strong>#{record.archiveId}</strong>
-                  <span>{record.downloadCount} скачиваний</span>
-                  <time>{formatDate(record.downloadedAt)}</time>
+                  <span className="admin-download-record-metrics"><span>{record.downloadCount} скачиваний</span><time>{formatDate(record.downloadedAt)}</time></span>
                 </div>
               ))}
             </div>

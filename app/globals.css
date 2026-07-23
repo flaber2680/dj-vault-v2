@@ -958,22 +958,20 @@ body:has(.admin-workspace-page) > .footer { display: none; }
 .admin-downloads-table .admin-table-row { grid-template-columns: 110px minmax(240px, 1fr) 140px minmax(160px, .55fr); }
 .admin-download-groups { border-top: 1px solid rgba(255, 255, 255, .22); }
 .admin-download-group { border-bottom: 1px solid rgba(255, 255, 255, .14); }
-.admin-download-group summary { min-height: 66px; display: grid; grid-template-columns: minmax(240px, 1.5fr) 120px 140px minmax(160px, .7fr); gap: 18px; align-items: center; cursor: pointer; list-style: none; }
+.admin-download-group summary { min-height: 66px; display: grid; grid-template-columns: minmax(240px, 1fr) auto; gap: 32px; align-items: center; cursor: pointer; list-style: none; }
 .admin-download-group summary::-webkit-details-marker { display: none; }
 .admin-download-group summary::after { content: "+"; position: absolute; right: 0; color: rgba(255, 255, 255, .56); font-size: 18px; }
 .admin-download-group[open] summary::after { content: "−"; }
 .admin-download-group summary { position: relative; padding-right: 28px; }
-.admin-download-group summary > span:not(.admin-download-group-user),
-.admin-download-group summary time { color: rgba(255, 255, 255, .52); font-size: 9px; text-transform: uppercase; }
+.admin-download-group-metrics { display: flex; align-items: center; justify-content: flex-end; gap: clamp(20px, 3vw, 56px); padding-right: 18px; color: rgba(255, 255, 255, .52); font-size: 9px; text-transform: uppercase; white-space: nowrap; }
 .admin-download-group-user { min-width: 0; display: grid; gap: 4px; }
 .admin-download-group-user strong { overflow: hidden; color: #fff; font-size: 11px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .admin-download-group-user small { overflow: hidden; color: rgba(255, 255, 255, .42); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .admin-download-group-records { margin-left: clamp(20px, 4vw, 64px); border-top: 1px solid rgba(255, 255, 255, .1); }
-.admin-download-group-records > div { min-height: 44px; display: grid; grid-template-columns: minmax(120px, 1fr) 150px minmax(160px, .6fr); gap: 18px; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.admin-download-group-records > div { min-height: 44px; display: grid; grid-template-columns: minmax(120px, 1fr) auto; gap: 18px; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .admin-download-group-records > div:last-child { border-bottom: 0; }
 .admin-download-group-records strong { color: #fff; font-size: 11px; }
-.admin-download-group-records span,
-.admin-download-group-records time { color: rgba(255, 255, 255, .48); font-size: 9px; text-transform: uppercase; }
+.admin-download-record-metrics { display: flex; align-items: center; gap: clamp(20px, 3vw, 56px); color: rgba(255, 255, 255, .48); font-size: 9px; text-transform: uppercase; white-space: nowrap; }
 
 .admin-table-head {
   min-height: 42px;
@@ -1113,11 +1111,11 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   .admin-collection-table .admin-table-row,
   .admin-users-table .admin-table-row,
   .admin-downloads-table .admin-table-row { min-height: 88px; padding: 13px 0; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .admin-download-group summary { min-height: 82px; grid-template-columns: minmax(0, 1fr) 1fr; gap: 8px 16px; padding: 12px 28px 12px 0; }
-  .admin-download-group summary time { grid-column: 2; grid-row: 2; }
+  .admin-download-group summary { min-height: 82px; grid-template-columns: 1fr; gap: 8px; padding: 12px 28px 12px 0; }
+  .admin-download-group-metrics { justify-content: flex-start; gap: 16px; padding-right: 0; overflow: hidden; }
   .admin-download-group-records { margin-left: 0; }
-  .admin-download-group-records > div { padding: 12px 0; grid-template-columns: 1fr auto; gap: 7px 12px; }
-  .admin-download-group-records time { grid-column: 1 / -1; }
+  .admin-download-group-records > div { padding: 12px 0; grid-template-columns: 1fr; gap: 8px; }
+  .admin-download-record-metrics { gap: 16px; }
   .admin-table-row strong,
   .admin-table-row span { white-space: normal; }
   .admin-toolbar { grid-template-columns: minmax(0, 1fr) auto; }
