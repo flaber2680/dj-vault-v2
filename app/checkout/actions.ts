@@ -51,6 +51,7 @@ export async function startCheckout(formData: FormData) {
     durationDays: accessPackage.durationDays,
     method,
     amount: accessPackage.amount,
+    applyPromoDiscount: !accessPackage.isSmoke,
   });
 
   let confirmationUrl = "";
@@ -58,7 +59,7 @@ export async function startCheckout(formData: FormData) {
 
   try {
     const yookassaPayment = await createYooKassaPayment({
-      amount: accessPackage.amount,
+      amount: storedPayment.amount,
       description: `DJ Vault: доступ на ${accessPackage.durationDays} дней`,
       method,
       returnUrl: `${getAppUrl()}/checkout/result?payment=${storedPayment.id}`,
@@ -67,6 +68,7 @@ export async function startCheckout(formData: FormData) {
         userId: user.id,
         packageId: accessPackage.id,
         durationDays: String(accessPackage.durationDays),
+        discountPercent: String(storedPayment.discountPercent),
       },
     });
 

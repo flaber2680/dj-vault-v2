@@ -89,6 +89,7 @@ test("initializes the complete schema idempotently", async (t) => {
     [
       { name: "001_initial_schema" },
       { name: "002_rate_limits_expires_at_index" },
+      { name: "003_promo_discounts" },
     ],
   );
 
@@ -141,6 +142,8 @@ test("adds the expiry index to an existing migration-001 database without rebuil
     );
     INSERT INTO schema_migrations (name, applied_at)
     VALUES ('001_initial_schema', '2026-07-13T00:00:00.000Z');
+    INSERT INTO schema_migrations (name, applied_at)
+    VALUES ('003_promo_discounts', '2026-07-23T00:00:00.000Z');
     INSERT INTO rate_limits (key, window_start, count, expires_at)
     VALUES ('preserved', '2026-07-14T00:00:00.000Z', 4, '2026-07-14T01:00:00.000Z');
   `);
@@ -152,10 +155,11 @@ test("adds the expiry index to an existing migration-001 database without rebuil
     { key: "preserved", count: 4 },
   );
   assert.deepEqual(
-    db.prepare("SELECT name FROM schema_migrations ORDER BY id").all(),
+    db.prepare("SELECT name FROM schema_migrations ORDER BY name").all(),
     [
       { name: "001_initial_schema" },
       { name: "002_rate_limits_expires_at_index" },
+      { name: "003_promo_discounts" },
     ],
   );
   assert.equal(
@@ -257,6 +261,9 @@ test("round-trips every current payment field", async (t) => {
     activation_plan_id: "club",
     method: "bank_card",
     amount: 2700,
+    original_amount: 2700,
+    discount_percent: 0,
+    promo_code_id: null,
     currency: "RUB",
     status: "succeeded",
     paid_at: "2026-07-13T08:01:00.000Z",
@@ -280,6 +287,9 @@ test("round-trips every current payment field", async (t) => {
       activation_plan_id,
       method,
       amount,
+      original_amount,
+      discount_percent,
+      promo_code_id,
       currency,
       status,
       paid_at,
@@ -300,6 +310,9 @@ test("round-trips every current payment field", async (t) => {
       @activation_plan_id,
       @method,
       @amount,
+      @original_amount,
+      @discount_percent,
+      @promo_code_id,
       @currency,
       @status,
       @paid_at,

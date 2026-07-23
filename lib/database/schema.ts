@@ -145,6 +145,27 @@ const migrations: Migration[] = [
       ON rate_limits(expires_at);
     `,
   },
+  {
+    name: "003_promo_discounts",
+    sql: `
+      ALTER TABLE promo_codes ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 20;
+      ALTER TABLE promo_codes ADD COLUMN discount_registration_limit INTEGER;
+      ALTER TABLE referrals ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE referrals ADD COLUMN discount_reserved_payment_id TEXT;
+      ALTER TABLE referrals ADD COLUMN discount_reserved_at TEXT;
+      ALTER TABLE referrals ADD COLUMN discount_used_at TEXT;
+      ALTER TABLE referrals ADD COLUMN converted_original_amount REAL;
+      ALTER TABLE referrals ADD COLUMN converted_discount_percent INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE activated_payments ADD COLUMN original_amount REAL;
+      ALTER TABLE activated_payments ADD COLUMN discount_percent INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE activated_payments ADD COLUMN promo_code_id TEXT;
+      UPDATE promo_codes
+      SET discount_percent = 50, discount_registration_limit = 16
+      WHERE normalized_code = 'KIT';
+      CREATE INDEX idx_referrals_discount_reservation
+      ON referrals(discount_reserved_payment_id);
+    `,
+  },
 ];
 
 export function initializeDatabase(db: Database.Database): void {

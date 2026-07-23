@@ -207,7 +207,7 @@ test("reprocessing a provider payment grants access and converts the referral on
     id: "provider-payment-1",
     status: "succeeded",
     paid: true,
-    amount: { value: "1000", currency: "RUB" },
+    amount: { value: String(stored.amount), currency: "RUB" },
     metadata: { localPaymentId: stored.id },
   };
 
@@ -225,12 +225,99 @@ test("reprocessing a provider payment grants access and converts the referral on
   assert.equal(referrals.length, 1);
   assert.equal(referrals[0].paymentId, stored.id);
   assert.equal(referrals[0].convertedPackageId, "days-30");
+  assert.equal(referrals[0].convertedAmount, 800);
+  assert.equal(referrals[0].convertedOriginalAmount, 1000);
+  assert.equal(referrals[0].convertedDiscountPercent, 20);
   assert.equal(
     getRuntimeDatabase()
       .prepare("SELECT count(*) AS count FROM activated_payments WHERE activated_at IS NOT NULL")
       .get().count,
     1,
   );
+});
+
+test("KIT accepts exactly sixteen registrations and grants a one-time fifty percent discount", async (t) => {
+  await createRuntimeFixture(t);
+  const owner = await createUserWithEmail({
+    email: "kit-owner@example.com",
+    password: "kit-owner-password",
+  });
+  await createPromoCodeForUser({
+    code: "KIT",
+    ownerUserId: owner.id,
+  });
+
+  const users = await Promise.all(Array.from({ length: 16 }, (_, index) => registerEmailUserWithReferral({
+    email: `kit-${index}@example.com`,
+    password: `kit-password-${index}`,
+    promoCode: "KIT",
+  })));
+
+  await assert.rejects(
+    registerEmailUserWithReferral({
+      email: "kit-overflow@example.com",
+      password: "kit-overflow-password",
+      promoCode: "KIT",
+    }),
+    /PROMO_CODE_REGISTRATION_LIMIT_REACHED/,
+  );
+  assert.equal(await findUserByEmail("kit-overflow@example.com"), null);
+
+  const firstPayment = await createStoredPayment({
+    userId: users[0].id,
+    packageId: "days-90",
+    durationDays: 90,
+    method: "bank_card",
+    amount: 2700,
+  });
+  assert.equal(firstPayment.amount, 1350);
+  assert.equal(firstPayment.originalAmount, 2700);
+  assert.equal(firstPayment.discountPercent, 50);
+
+  await activateYooKassaPayment({
+    id: "kit-provider-first",
+    status: "succeeded",
+    paid: true,
+    amount: { value: "1350", currency: "RUB" },
+    metadata: { localPaymentId: firstPayment.id },
+  });
+
+  const repeatPayment = await createStoredPayment({
+    userId: users[0].id,
+    packageId: "days-30",
+    durationDays: 30,
+    method: "bank_card",
+    amount: 1000,
+  });
+  assert.equal(repeatPayment.amount, 1000);
+  assert.equal(repeatPayment.discountPercent, 0);
+});
+
+test("a canceled discounted payment releases the discount for the next payment", async (t) => {
+  await createRuntimeFixture(t);
+  await createOwnerWithPromo("RETRY");
+  const buyer = await registerEmailUserWithReferral({
+    email: "retry@example.com",
+    password: "retry-password",
+    promoCode: "RETRY",
+  });
+  const first = await createStoredPayment({
+    userId: buyer.id,
+    packageId: "days-30",
+    durationDays: 30,
+    method: "bank_card",
+    amount: 1000,
+  });
+  await updateStoredPayment(first.id, { status: "canceled" });
+  const retry = await createStoredPayment({
+    userId: buyer.id,
+    packageId: "days-30",
+    durationDays: 30,
+    method: "bank_card",
+    amount: 1000,
+  });
+  assert.equal(retry.amount, 800);
+  assert.equal(retry.discountPercent, 20);
 });
 
 test("a legacy succeeded payment never extends imported access a second time", async (t) => {

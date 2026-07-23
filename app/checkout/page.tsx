@@ -6,6 +6,8 @@ import { ScrollEffects } from "@/components/ScrollEffects";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import { getCheckoutPackage } from "@/lib/payments/packages";
+import { getPromoDiscountEligibility } from "@/lib/referrals/store";
+import { calculateDiscountedAmount, formatRub } from "@/lib/payments/discount";
 
 export const metadata = {
   title: "Оформление подписки",
@@ -46,6 +48,10 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   }
 
   const isRenewal = hasClubAccess(user);
+  const promoDiscount = accessPackage.isSmoke ? null : await getPromoDiscountEligibility(user.id);
+  const payableAmount = promoDiscount
+    ? calculateDiscountedAmount(accessPackage.amount, promoDiscount.percent)
+    : accessPackage.amount;
 
   return (
     <main className="page">
@@ -82,8 +88,11 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
 
           <div className="checkout-total">
             <span>К оплате</span>
-            <strong>{accessPackage.price}</strong>
+            {promoDiscount ? <del>{accessPackage.price}</del> : null}
+            <strong>{formatRub(payableAmount)}</strong>
           </div>
+
+          {promoDiscount ? <p className="checkout-discount">Промокод {promoDiscount.code}: скидка {promoDiscount.percent}% на эту первую покупку.</p> : null}
 
           <div className="checkout-meta">
             <div>

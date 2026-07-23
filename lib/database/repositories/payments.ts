@@ -24,6 +24,9 @@ export type StoredPaymentRecord = {
   activationPlanId?: "club" | "start" | "pro" | "premium";
   method: PaymentMethodRecord;
   amount: number;
+  originalAmount: number;
+  discountPercent: number;
+  promoCodeId?: string;
   currency: "RUB";
   status: PaymentStatusRecord;
   paidAt?: string;
@@ -45,6 +48,9 @@ type PaymentRow = {
   activation_plan_id: "club" | "start" | "pro" | "premium" | null;
   method: PaymentMethodRecord | null;
   amount: number | null;
+  original_amount: number | null;
+  discount_percent: number | null;
+  promo_code_id: string | null;
   currency: "RUB" | null;
   status: PaymentStatusRecord | null;
   paid_at: string | null;
@@ -73,6 +79,7 @@ export type CreateStoredPaymentInput = {
   durationDays: number;
   method: PaymentMethodRecord;
   amount: number;
+  applyPromoDiscount?: boolean;
 };
 
 export type PaymentPatch = Partial<
@@ -111,6 +118,9 @@ function mapPayment(row: PaymentRow): StoredPaymentRecord {
     activationPlanId: row.activation_plan_id ?? undefined,
     method: (row.method ?? "bank_card") as PaymentMethodRecord,
     amount: row.amount ?? 0,
+    originalAmount: row.original_amount ?? row.amount ?? 0,
+    discountPercent: row.discount_percent ?? 0,
+    promoCodeId: row.promo_code_id ?? undefined,
     currency: (row.currency ?? "RUB") as "RUB",
     status: (row.status ?? "pending") as PaymentStatusRecord,
     paidAt: row.paid_at ?? undefined,
@@ -185,12 +195,27 @@ export function createStoredPaymentRecord(input: CreateStoredPaymentInput): Stor
   const run = db.transaction(() => {
     const now = new Date().toISOString();
     const id = randomUUID();
+    const discount = input.applyPromoDiscount === false ? undefined : db.prepare(`
+      SELECT r.id AS referral_id, r.promo_code_id, r.discount_percent
+      FROM referrals r
+      WHERE r.referred_user_id = ?
+        AND r.discount_percent > 0
+        AND r.discount_used_at IS NULL
+        AND r.discount_reserved_payment_id IS NULL
+      LIMIT 1
+    `).get(input.userId) as {
+      referral_id: string;
+      promo_code_id: string;
+      discount_percent: number;
+    } | undefined;
+    const discountPercent = discount?.discount_percent ?? 0;
+    const amount = Math.round(input.amount * (100 - discountPercent)) / 100;
 
     db.prepare(`
       INSERT INTO activated_payments (
         id, provider, user_id, package_id, duration_days, method, amount,
-        currency, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        original_amount, discount_percent, promo_code_id, currency, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       "yookassa",
@@ -198,12 +223,26 @@ export function createStoredPaymentRecord(input: CreateStoredPaymentInput): Stor
       input.packageId,
       input.durationDays,
       input.method,
+      amount,
       input.amount,
+      discountPercent,
+      discount?.promo_code_id ?? null,
       "RUB",
       "pending",
       now,
       now,
     );
+
+    if (discount) {
+      const reservation = db.prepare(`
+        UPDATE referrals
+        SET discount_reserved_payment_id = ?, discount_reserved_at = ?
+        WHERE id = ? AND discount_used_at IS NULL AND discount_reserved_payment_id IS NULL
+      `).run(id, now, discount.referral_id);
+      if (reservation.changes !== 1) {
+        throw new Error("PROMO_DISCOUNT_RESERVATION_FAILED");
+      }
+    }
 
     return mapPayment(getPaymentRow(db, id)!);
   });
@@ -247,6 +286,14 @@ export function updateStoredPaymentRecord(id: string, patch: PaymentPatch): Stor
       id,
     );
 
+    if (patch.status === "canceled" || patch.status === "failed") {
+      db.prepare(`
+        UPDATE referrals
+        SET discount_reserved_payment_id = NULL, discount_reserved_at = NULL
+        WHERE discount_reserved_payment_id = ? AND discount_used_at IS NULL
+      `).run(id);
+    }
+
     return mapPayment(getPaymentRow(db, id)!);
   });
 
@@ -279,6 +326,11 @@ export function failStoredPaymentActivation(
           error = ?, updated_at = ?
       WHERE id = ?
     `).run(providerStatus, error, new Date().toISOString(), id);
+    db.prepare(`
+      UPDATE referrals
+      SET discount_reserved_payment_id = NULL, discount_reserved_at = NULL
+      WHERE discount_reserved_payment_id = ? AND discount_used_at IS NULL
+    `).run(id);
 
     return mapPayment(getPaymentRow(db, id)!);
   });
@@ -350,16 +402,27 @@ export function activatePaymentTransaction(input: PaymentActivationInput): {
       db.prepare(`
         UPDATE referrals
         SET converted_at = ?, converted_package_id = ?, converted_duration_days = ?,
-            converted_amount = ?, payment_id = ?
+            converted_amount = ?, converted_original_amount = ?, converted_discount_percent = ?,
+            payment_id = ?
         WHERE referred_user_id = ? AND converted_at IS NULL
       `).run(
         now.toISOString(),
         input.packageId,
         input.durationDays,
         payment.amount,
+        payment.original_amount ?? payment.amount,
+        payment.discount_percent ?? 0,
         payment.id,
         user.id,
       );
+
+      if ((payment.discount_percent ?? 0) > 0) {
+        db.prepare(`
+          UPDATE referrals
+          SET discount_used_at = ?, discount_reserved_payment_id = NULL, discount_reserved_at = NULL
+          WHERE discount_reserved_payment_id = ? AND discount_used_at IS NULL
+        `).run(now.toISOString(), payment.id);
+      }
     }
 
     const activatedPayment = getPaymentRow(db, payment.id)!;

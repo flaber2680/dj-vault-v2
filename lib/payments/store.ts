@@ -28,6 +28,7 @@ type CreatePaymentInput = {
   durationDays: number;
   method: PaymentMethod;
   amount: number;
+  applyPromoDiscount?: boolean;
 };
 
 export function isPaymentMethod(value: string): value is PaymentMethod {

@@ -37,7 +37,11 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
     redirect(returnTo ?? (hasClubAccess(user) ? "/collections" : "/account"));
   }
 
-  const error = params.error ? errorMessages[params.error] : undefined;
+  const error = params.error === "promo_limit_reached"
+    ? "Лимит регистраций по этому промокоду уже исчерпан."
+    : params.error
+      ? errorMessages[params.error]
+      : undefined;
 
   return (
     <AuthCard

@@ -25,6 +25,8 @@ export function AdminPromoCodes({ items }: AdminPromoCodesProps) {
                 <div><span>Промокод</span><strong>{item.code.code}</strong></div>
                 <div><span>Владелец</span><strong>{item.owner?.email ?? item.code.ownerUserId}</strong></div>
                 <div><span>Регистрации</span><strong>{item.registeredCount}</strong></div>
+                <div><span>Скидка</span><strong>−{item.code.discountPercent}%</strong></div>
+                <div><span>Лимит</span><strong>{item.code.discountRegistrationLimit ? `${item.registeredCount}/${item.code.discountRegistrationLimit}` : "—"}</strong></div>
                 <div><span>Оплаченные</span><strong>{item.paidCount}</strong></div>
                 <div><span>Конверсия</span><strong>{conversion}%</strong></div>
               </header>

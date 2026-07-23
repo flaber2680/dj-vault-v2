@@ -100,15 +100,27 @@ export async function createPromoCodeAction(formData: FormData) {
 
   const userId = getField(formData, "userId");
   const code = getField(formData, "code");
+  const discountPercent = Number(getField(formData, "discountPercent") || "20");
+  const limitValue = getField(formData, "discountRegistrationLimit");
+  const discountRegistrationLimit = limitValue ? Number(limitValue) : undefined;
 
   if (!userId.trim() || !code.trim()) {
     redirect("/admin?section=users&promo_error=required");
+  }
+
+  if (
+    !Number.isInteger(discountPercent) || discountPercent < 1 || discountPercent > 90 ||
+    (discountRegistrationLimit !== undefined && (!Number.isInteger(discountRegistrationLimit) || discountRegistrationLimit < 1))
+  ) {
+    redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&promo_error=invalid_terms`);
   }
 
   try {
     const promoCode = await createPromoCodeForUser({
       code,
       ownerUserId: userId,
+      discountPercent,
+      discountRegistrationLimit,
     });
 
     revalidatePath("/admin");

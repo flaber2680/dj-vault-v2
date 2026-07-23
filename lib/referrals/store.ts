@@ -4,6 +4,7 @@ import type { AccessPackageId } from "@/lib/content/plans";
 import {
   createPromoCodeRecord,
   findActivePromoCodeRecord,
+  findPromoDiscountEligibilityRecord,
   getPromoCodeRecords,
   getPromoReferralRecords,
   normalizePromoCode as normalizeStoredPromoCode,
@@ -93,11 +94,19 @@ export async function findActivePromoCode(code: string) {
 export async function createPromoCodeForUser({
   code,
   ownerUserId,
+  discountPercent,
+  discountRegistrationLimit,
 }: {
   code: string;
   ownerUserId: string;
+  discountPercent?: number;
+  discountRegistrationLimit?: number;
 }) {
-  return createPromoCodeRecord({ code, ownerUserId }) as PromoCode;
+  return createPromoCodeRecord({ code, ownerUserId, discountPercent, discountRegistrationLimit }) as PromoCode;
+}
+
+export async function getPromoDiscountEligibility(userId?: string) {
+  return userId ? findPromoDiscountEligibilityRecord(userId) : null;
 }
 
 export async function recordPromoRegistration({
@@ -115,12 +124,16 @@ export async function recordPaidReferralConversion({
   packageId,
   durationDays,
   amount,
+  originalAmount,
+  discountPercent,
   userId,
 }: {
   paymentId: string;
   packageId: AccessPackageId;
   durationDays: number;
   amount: number;
+  originalAmount: number;
+  discountPercent: number;
   userId: string;
 }) {
   return recordPaidReferralConversionRecord({
@@ -128,6 +141,8 @@ export async function recordPaidReferralConversion({
     packageId,
     durationDays,
     amount,
+    originalAmount,
+    discountPercent,
     userId,
   }) as PromoReferral | null;
 }

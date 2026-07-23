@@ -4,6 +4,8 @@ import { hasClubAccess } from "@/lib/access/subscription";
 import { getCollections, getDemoCollection } from "@/lib/content/collections";
 import { accessPackageList } from "@/lib/content/plans";
 import { formatTrackCount } from "@/lib/content/track-count";
+import { getPromoDiscountEligibility } from "@/lib/referrals/store";
+import { calculateDiscountedAmount, formatRub } from "@/lib/payments/discount";
 
 const ordinarySteps = [
   "Открыть DJ Pool",
@@ -74,6 +76,7 @@ export async function LibraryBlocks() {
     .filter(Boolean);
 
   const hasPaidPlan = user ? hasClubAccess(user) : false;
+  const promoDiscount = await getPromoDiscountEligibility(user?.id);
   const isGuest = !user;
 
   const pricingLabel = !user
@@ -340,7 +343,11 @@ export async function LibraryBlocks() {
         </div>
 
         <div className="pricing-grid">
-          {accessPackageList.map((accessPackage) => (
+          {accessPackageList.map((accessPackage) => {
+            const discountedAmount = promoDiscount
+              ? calculateDiscountedAmount(accessPackage.amount, promoDiscount.percent)
+              : null;
+            return (
             <article
               className={`pricing-card${
                 accessPackage.id === "days-90" ? " pricing-card-featured" : ""
@@ -356,9 +363,11 @@ export async function LibraryBlocks() {
               </div>
 
               <div className="plan-price">
-                {accessPackage.oldPrice && <span>{accessPackage.oldPrice}</span>}
-                <strong>{accessPackage.price}</strong>
+                {(discountedAmount || accessPackage.oldPrice) && <span>{discountedAmount ? accessPackage.price : accessPackage.oldPrice}</span>}
+                <strong>{discountedAmount ? formatRub(discountedAmount) : accessPackage.price}</strong>
               </div>
+
+              {promoDiscount ? <p className="plan-discount">Промокод {promoDiscount.code}: −{promoDiscount.percent}%</p> : null}
 
               <ul>
                 <li>Закрытый клуб DJ Vault</li>
@@ -372,7 +381,8 @@ export async function LibraryBlocks() {
                 </Link>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       </section>
     </>

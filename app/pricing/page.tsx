@@ -4,6 +4,8 @@ import { ScrollEffects } from "@/components/ScrollEffects";
 import { getCurrentUser } from "@/lib/auth/session";
 import { hasClubAccess } from "@/lib/access/subscription";
 import { accessPackageList } from "@/lib/content/plans";
+import { getPromoDiscountEligibility } from "@/lib/referrals/store";
+import { calculateDiscountedAmount, formatRub } from "@/lib/payments/discount";
 
 export const metadata = {
   title: "Доступ в клуб",
@@ -18,6 +20,7 @@ const planBenefits = [
 export default async function PricingPage() {
   const user = await getCurrentUser();
   const isRenewal = user ? hasClubAccess(user) : false;
+  const promoDiscount = await getPromoDiscountEligibility(user?.id);
 
   return (
     <main className="page">
@@ -42,6 +45,9 @@ export default async function PricingPage() {
 
         <div className="pricing-grid pricing-page-grid">
           {accessPackageList.map((accessPackage) => {
+            const discountedAmount = promoDiscount
+              ? calculateDiscountedAmount(accessPackage.amount, promoDiscount.percent)
+              : null;
             const href = !user
               ? "/register"
               : `/checkout?package=${accessPackage.id}`;
@@ -62,9 +68,11 @@ export default async function PricingPage() {
                 </div>
 
                 <div className="plan-price">
-                  {accessPackage.oldPrice && <span>{accessPackage.oldPrice}</span>}
-                  <strong>{accessPackage.price}</strong>
+                  {(discountedAmount || accessPackage.oldPrice) && <span>{discountedAmount ? accessPackage.price : accessPackage.oldPrice}</span>}
+                  <strong>{discountedAmount ? formatRub(discountedAmount) : accessPackage.price}</strong>
                 </div>
+
+                {promoDiscount ? <p className="plan-discount">Промокод {promoDiscount.code}: −{promoDiscount.percent}% на первую покупку</p> : null}
 
                 <ul>
                   {planBenefits.map((benefit) => (

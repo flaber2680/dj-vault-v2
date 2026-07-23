@@ -113,6 +113,10 @@ export async function registerWithEmail(formData: FormData) {
       redirectWithError("/register", "invalid_promo", returnTo);
     }
 
+    if ((error as Error).message === "PROMO_CODE_REGISTRATION_LIMIT_REACHED") {
+      redirectWithError("/register", "promo_limit_reached", returnTo);
+    }
+
     redirectWithError("/register", "unknown", returnTo);
   }
 

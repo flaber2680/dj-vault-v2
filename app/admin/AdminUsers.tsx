@@ -120,6 +120,8 @@ export function AdminUsers({
             <header><span>Промокоды</span><strong>{codesByOwner.get(selected.id)?.join(", ") ?? "Не выданы"}</strong></header>
             <form action={createPromoCodeAction} className="admin-inline-form admin-inline-form-promo">
               <input name="userId" type="hidden" value={selected.id} />
+              <label><span>Скидка, %</span><input name="discountPercent" type="number" min={1} max={90} defaultValue={20} /></label>
+              <label><span>Лимит регистраций</span><input name="discountRegistrationLimit" type="number" min={1} placeholder="Без лимита" /></label>
               <label><span>Новый код</span><input name="code" placeholder="PROMO" /></label>
               <button type="submit">Выдать</button>
             </form>

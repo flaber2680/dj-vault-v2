@@ -202,17 +202,32 @@ export function registerEmailUserWithReferral(input: RegistrationInput): PublicU
       throw new Error("USER_EXISTS");
     }
 
-    let promo: { id: string; code: string; owner_user_id: string } | undefined;
+    let promo: {
+      id: string;
+      code: string;
+      owner_user_id: string;
+      discount_percent: number;
+      discount_registration_limit: number | null;
+    } | undefined;
     if (input.promoCode) {
       const normalizedCode = normalizePromoCode(input.promoCode);
       promo = db.prepare(`
-        SELECT id, code, owner_user_id
+        SELECT id, code, owner_user_id, discount_percent, discount_registration_limit
         FROM promo_codes
         WHERE normalized_code = ? AND is_active = 1
       `).get(normalizedCode) as typeof promo;
 
       if (!promo) {
         throw new Error("PROMO_CODE_NOT_FOUND");
+      }
+
+      if (promo.discount_registration_limit !== null) {
+        const registrations = db.prepare(`
+          SELECT count(*) AS count FROM referrals WHERE promo_code_id = ?
+        `).get(promo.id) as { count: number };
+        if (registrations.count >= promo.discount_registration_limit) {
+          throw new Error("PROMO_CODE_REGISTRATION_LIMIT_REACHED");
+        }
       }
     }
 
@@ -222,9 +237,10 @@ export function registerEmailUserWithReferral(input: RegistrationInput): PublicU
     if (promo) {
       db.prepare(`
         INSERT INTO referrals (
-          id, promo_code_id, code, owner_user_id, referred_user_id, registered_at
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `).run(randomUUID(), promo.id, promo.code, promo.owner_user_id, id, now);
+          id, promo_code_id, code, owner_user_id, referred_user_id, registered_at,
+          discount_percent
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(randomUUID(), promo.id, promo.code, promo.owner_user_id, id, now, promo.discount_percent);
     }
 
     return getPublicUser(toStoredUser(db, getUserRowById(db, id)!));
