@@ -31,6 +31,8 @@ type AdminPageProps = {
     promo?: string;
     promo_error?: string;
     reset?: string;
+    deleted?: string;
+    delete_error?: string;
     saved?: string;
   }>;
 };
@@ -53,6 +55,7 @@ function getStatusMessage(params: Awaited<NonNullable<AdminPageProps["searchPara
   if (params.reset) return { text: `Лимит скачиваний для архива #${params.reset} сброшен.`, error: false };
   if (params.promo) return { text: `Промокод ${params.promo} выдан пользователю.`, error: false };
   if (params.access_updated) return { text: `Доступ пользователя ${params.access_updated} обновлён.`, error: false };
+  if (params.deleted) return { text: `Пользователь ${params.deleted} удалён.`, error: false };
   if (params.error === "required") return { text: "Заполните номер, дату, количество треков и жанры.", error: true };
   if (params.error === "reset_required") return { text: "Не удалось определить пользователя или архив.", error: true };
   if (params.promo_error === "exists") return { text: "Такой промокод уже существует.", error: true };
@@ -61,6 +64,9 @@ function getStatusMessage(params: Awaited<NonNullable<AdminPageProps["searchPara
   if (params.access_error === "days_not_allowed") return { text: "Нельзя добавить дни, пока выбран доступ Free.", error: true };
   if (params.access_error === "not_found") return { text: "Пользователь не найден.", error: true };
   if (params.access_error) return { text: "Проверьте тип доступа и количество дней.", error: true };
+  if (params.delete_error === "self") return { text: "Нельзя удалить текущего администратора.", error: true };
+  if (params.delete_error === "confirm") return { text: "Подтвердите удаление пользователя.", error: true };
+  if (params.delete_error) return { text: "Не удалось удалить пользователя.", error: true };
   return null;
 }
 

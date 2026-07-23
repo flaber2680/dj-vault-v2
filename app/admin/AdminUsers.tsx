@@ -1,5 +1,6 @@
 import {
   createPromoCodeAction,
+  deleteUserAction,
   resetDownloadLimitAction,
   updateUserAccessAction,
 } from "@/app/admin/actions";
@@ -144,6 +145,16 @@ export function AdminUsers({
                 );
               })}
             </div>
+          </section>
+
+          <section className="admin-drawer-section admin-danger-zone">
+            <header><span>Опасная зона</span><strong>Удаление</strong></header>
+            <p>Удалит пользователя, его скачивания, платежи и привязанные промокоды.</p>
+            <form action={deleteUserAction} className="admin-delete-user-form">
+              <input name="userId" type="hidden" value={selected.id} />
+              <label><input name="confirmDelete" type="checkbox" required /> <span>Подтверждаю удаление пользователя</span></label>
+              <button type="submit">Удалить пользователя</button>
+            </form>
           </section>
         </AdminDrawer>
       ) : null}

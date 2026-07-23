@@ -4,6 +4,7 @@ import {
   applyStoredAdminAccessChange,
   applyStoredPaidPaymentAccess,
   createEmailUser,
+  deleteStoredUser,
   findStoredUserByEmail,
   findStoredUserById,
   getPublicUser as toPublicUser,
@@ -161,6 +162,10 @@ export async function createUserWithEmail({
     name,
     passwordHash: await hashPassword(password),
   }) as PublicUser;
+}
+
+export async function deleteUser(id: string) {
+  return deleteStoredUser(id) as PublicUser;
 }
 
 export async function registerEmailUserWithReferral({

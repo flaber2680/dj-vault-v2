@@ -10,7 +10,7 @@ import { createPromoCodeForUser } from "@/lib/referrals/store";
 import {
   type AccessPlan,
 } from "@/lib/access/subscription";
-import { applyAdminAccessChange } from "@/lib/auth/store";
+import { applyAdminAccessChange, deleteUser } from "@/lib/auth/store";
 
 function getField(formData: FormData, name: string) {
   const value = formData.get(name);
@@ -180,4 +180,30 @@ export async function updateUserAccessAction(formData: FormData) {
   revalidatePath("/account");
   revalidatePath("/collections");
   redirect(`/admin?section=users&user=${encodeURIComponent(targetUser.id)}&access_updated=${encodeURIComponent(targetUser.email)}`);
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const admin = await getCurrentUser();
+  if (!admin) redirect("/login");
+  if (!isAdminUser(admin)) redirect("/account");
+
+  const userId = getField(formData, "userId").trim();
+  const confirmed = formData.get("confirmDelete") === "on";
+  if (!userId || !confirmed) {
+    redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&delete_error=confirm`);
+  }
+  if (userId === admin.id) {
+    redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&delete_error=self`);
+  }
+
+  try {
+    const deleted = await deleteUser(userId);
+    revalidatePath("/admin");
+    redirect(`/admin?section=users&deleted=${encodeURIComponent(deleted.email)}`);
+  } catch (error) {
+    if ((error as Error).message === "USER_NOT_FOUND") {
+      redirect("/admin?section=users&delete_error=not_found");
+    }
+    redirect(`/admin?section=users&user=${encodeURIComponent(userId)}&delete_error=unknown`);
+  }
 }

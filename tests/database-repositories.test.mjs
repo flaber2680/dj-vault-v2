@@ -12,6 +12,7 @@ import {
 } from "../lib/database/client.ts";
 import {
   createUserWithEmail,
+  deleteUser,
   findUserByEmail,
   getUsers,
   registerEmailUserWithReferral,
@@ -235,6 +236,42 @@ test("reprocessing a provider payment grants access and converts the referral on
       .get().count,
     1,
   );
+});
+
+test("deleting a user removes their dependent promo, payment, and download data", async (t) => {
+  await createRuntimeFixture(t);
+  const owner = await createUserWithEmail({
+    email: "delete-owner@example.com",
+    password: "delete-owner-password",
+  });
+  await createPromoCodeForUser({ code: "DELETE", ownerUserId: owner.id });
+  const buyer = await registerEmailUserWithReferral({
+    email: "delete-buyer@example.com",
+    password: "delete-buyer-password",
+    promoCode: "DELETE",
+  });
+  await createStoredPayment({
+    userId: buyer.id,
+    packageId: "days-30",
+    durationDays: 30,
+    method: "bank_card",
+    amount: 1000,
+  });
+  await registerDownloadAttempt({
+    userId: buyer.id,
+    archiveId: "001",
+    limit: 2,
+    ipAddress: "192.0.2.12",
+    userAgent: "test-agent",
+  });
+
+  const deleted = await deleteUser(buyer.id);
+  assert.equal(deleted.id, buyer.id);
+  assert.equal(await findUserByEmail(buyer.email), null);
+  const db = getRuntimeDatabase();
+  assert.equal(db.prepare("SELECT count(*) AS count FROM activated_payments WHERE user_id = ?").get(buyer.id).count, 0);
+  assert.equal(db.prepare("SELECT count(*) AS count FROM referrals WHERE referred_user_id = ?").get(buyer.id).count, 0);
+  assert.equal(db.prepare("SELECT count(*) AS count FROM download_records WHERE user_id = ?").get(buyer.id).count, 0);
 });
 
 test("KIT accepts exactly sixteen registrations and grants a one-time fifty percent discount", async (t) => {

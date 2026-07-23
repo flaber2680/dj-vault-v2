@@ -956,6 +956,24 @@ body:has(.admin-workspace-page) > .footer { display: none; }
 .admin-users-table .admin-table-row { grid-template-columns: minmax(230px, 1.2fr) minmax(190px, .8fr) minmax(130px, .55fr) minmax(110px, .4fr); }
 .admin-downloads-table .admin-table-head,
 .admin-downloads-table .admin-table-row { grid-template-columns: 110px minmax(240px, 1fr) 140px minmax(160px, .55fr); }
+.admin-download-groups { border-top: 1px solid rgba(255, 255, 255, .22); }
+.admin-download-group { border-bottom: 1px solid rgba(255, 255, 255, .14); }
+.admin-download-group summary { min-height: 66px; display: grid; grid-template-columns: minmax(240px, 1.5fr) 120px 140px minmax(160px, .7fr); gap: 18px; align-items: center; cursor: pointer; list-style: none; }
+.admin-download-group summary::-webkit-details-marker { display: none; }
+.admin-download-group summary::after { content: "+"; position: absolute; right: 0; color: rgba(255, 255, 255, .56); font-size: 18px; }
+.admin-download-group[open] summary::after { content: "−"; }
+.admin-download-group summary { position: relative; padding-right: 28px; }
+.admin-download-group summary > span:not(.admin-download-group-user),
+.admin-download-group summary time { color: rgba(255, 255, 255, .52); font-size: 9px; text-transform: uppercase; }
+.admin-download-group-user { min-width: 0; display: grid; gap: 4px; }
+.admin-download-group-user strong { overflow: hidden; color: #fff; font-size: 11px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.admin-download-group-user small { overflow: hidden; color: rgba(255, 255, 255, .42); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-download-group-records { margin-left: clamp(20px, 4vw, 64px); border-top: 1px solid rgba(255, 255, 255, .1); }
+.admin-download-group-records > div { min-height: 44px; display: grid; grid-template-columns: minmax(120px, 1fr) 150px minmax(160px, .6fr); gap: 18px; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.admin-download-group-records > div:last-child { border-bottom: 0; }
+.admin-download-group-records strong { color: #fff; font-size: 11px; }
+.admin-download-group-records span,
+.admin-download-group-records time { color: rgba(255, 255, 255, .48); font-size: 9px; text-transform: uppercase; }
 
 .admin-table-head {
   min-height: 42px;
@@ -1028,6 +1046,13 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 .admin-drawer-section > header span { color: rgba(255, 255, 255, .42); font-size: 9px; text-transform: uppercase; }
 .admin-drawer-section > header strong { color: #fff; font-size: 11px; }
 .admin-drawer-section > p { margin: 9px 0 0; color: rgba(255, 255, 255, .48); font-size: 9px; line-height: 1.45; text-transform: uppercase; }
+.admin-danger-zone { border-color: rgba(255, 116, 116, .4); }
+.admin-danger-zone > header strong { color: #ff8a8a; }
+.admin-delete-user-form { margin-top: 14px; display: grid; gap: 12px; }
+.admin-delete-user-form label { display: flex; align-items: center; gap: 8px; color: rgba(255, 255, 255, .68); font-size: 9px; text-transform: uppercase; }
+.admin-delete-user-form input[type="checkbox"] { width: 14px; height: 14px; accent-color: #ff6868; }
+.admin-delete-user-form button { min-height: 34px; justify-self: start; border: 1px solid #ff6868; background: transparent; color: #ff9d9d; cursor: pointer; font: inherit; font-size: 9px; text-transform: uppercase; }
+.admin-delete-user-form button:hover { background: #ff6868; color: #000; }
 .admin-inline-form { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
 .admin-inline-form label { min-width: 0; display: grid; gap: 7px; }
 .admin-inline-form input,
@@ -1088,6 +1113,11 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   .admin-collection-table .admin-table-row,
   .admin-users-table .admin-table-row,
   .admin-downloads-table .admin-table-row { min-height: 88px; padding: 13px 0; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .admin-download-group summary { min-height: 82px; grid-template-columns: minmax(0, 1fr) 1fr; gap: 8px 16px; padding: 12px 28px 12px 0; }
+  .admin-download-group summary time { grid-column: 2; grid-row: 2; }
+  .admin-download-group-records { margin-left: 0; }
+  .admin-download-group-records > div { padding: 12px 0; grid-template-columns: 1fr auto; gap: 7px 12px; }
+  .admin-download-group-records time { grid-column: 1 / -1; }
   .admin-table-row strong,
   .admin-table-row span { white-space: normal; }
   .admin-toolbar { grid-template-columns: minmax(0, 1fr) auto; }

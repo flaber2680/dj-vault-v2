@@ -170,6 +170,28 @@ export function getStoredUsers(): StoredUserRecord[] {
   return rows.map((row) => toStoredUser(db, row));
 }
 
+export function deleteStoredUser(id: string): PublicUserRecord {
+  const db = getRuntimeDatabase();
+  const run = db.transaction(() => {
+    const user = getUserRowById(db, id);
+    if (!user) {
+      throw new Error("USER_NOT_FOUND");
+    }
+
+    db.prepare(`
+      DELETE FROM referrals
+      WHERE owner_user_id = ? OR referred_user_id = ?
+    `).run(id, id);
+    db.prepare("DELETE FROM promo_codes WHERE owner_user_id = ?").run(id);
+    db.prepare("DELETE FROM activated_payments WHERE user_id = ?").run(id);
+    db.prepare("DELETE FROM users WHERE id = ?").run(id);
+
+    return getPublicUser(toStoredUser(db, user));
+  });
+
+  return run.immediate();
+}
+
 export function createEmailUser(input: Omit<RegistrationInput, "promoCode">): PublicUserRecord {
   const db = getRuntimeDatabase();
   const run = db.transaction(() => {
