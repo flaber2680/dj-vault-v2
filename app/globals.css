@@ -1071,11 +1071,15 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 
 .admin-promo-workspace { border-top: 1px solid rgba(255, 255, 255, .28); }
 .admin-promo-item { border-bottom: 1px solid rgba(255, 255, 255, .18); }
-.admin-promo-item > header { min-height: 74px; display: grid; grid-template-columns: minmax(110px, .8fr) minmax(170px, 1.7fr) repeat(5, minmax(76px, .55fr)); gap: 18px; align-items: center; }
-.admin-promo-item > header div { min-width: 0; display: grid; gap: 6px; }
-.admin-promo-item > header span { color: rgba(255, 255, 255, .36); font-size: 8px; text-transform: uppercase; }
-.admin-promo-item > header strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
-.admin-referral-list { margin-left: clamp(20px, 4vw, 64px); border-top: 1px solid rgba(255, 255, 255, .1); }
+.admin-promo-item > summary { min-height: 74px; display: grid; grid-template-columns: minmax(110px, .8fr) minmax(170px, 1.7fr) repeat(5, minmax(76px, .55fr)); gap: 18px; align-items: center; cursor: pointer; list-style: none; }
+.admin-promo-item > summary::-webkit-details-marker { display: none; }
+.admin-promo-item > summary { position: relative; padding-right: 28px; }
+.admin-promo-item > summary::after { content: "+"; position: absolute; right: 0; color: rgba(255, 255, 255, .56); font-size: 18px; }
+.admin-promo-item[open] > summary::after { content: "−"; }
+.admin-promo-item > summary div { min-width: 0; display: grid; gap: 6px; }
+.admin-promo-item > summary span { color: rgba(255, 255, 255, .36); font-size: 8px; text-transform: uppercase; }
+.admin-promo-item > summary strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.admin-referral-list { border-top: 1px solid rgba(255, 255, 255, .1); }
 .admin-referral-list > p { margin: 0; padding: 18px 0; color: rgba(255, 255, 255, .42); font-size: 9px; text-transform: uppercase; }
 .admin-referral-list > div { min-height: 46px; display: grid; grid-template-columns: minmax(220px, 1fr) 70px 120px 150px; gap: 14px; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .admin-referral-list strong,
@@ -1133,8 +1137,8 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
   .admin-inline-form button { grid-column: 1 / -1; }
   .admin-inline-form-promo { grid-template-columns: 1fr 104px; }
   .admin-inline-form-promo button { grid-column: 1 / -1; }
-  .admin-promo-item > header { padding: 16px 0; grid-template-columns: 1fr 1fr; }
-  .admin-promo-item > header div:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .admin-promo-item > summary { padding: 16px 28px 16px 0; grid-template-columns: 1fr 1fr; }
+  .admin-promo-item > summary div:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
   .admin-referral-list { margin-left: 0; }
   .admin-referral-list > div { padding: 12px 0; grid-template-columns: 1fr auto; gap: 7px 12px; }
   .admin-referral-list > div strong { white-space: normal; }

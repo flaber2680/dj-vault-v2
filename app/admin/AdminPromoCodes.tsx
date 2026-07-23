@@ -20,8 +20,8 @@ export function AdminPromoCodes({ items }: AdminPromoCodesProps) {
         {items.map((item) => {
           const conversion = item.registeredCount > 0 ? Math.round((item.paidCount / item.registeredCount) * 100) : 0;
           return (
-            <section className="admin-promo-item" key={item.code.id}>
-              <header>
+            <details className="admin-promo-item" key={item.code.id}>
+              <summary>
                 <div><span>Промокод</span><strong>{item.code.code}</strong></div>
                 <div><span>Владелец</span><strong>{item.owner?.email ?? item.code.ownerUserId}</strong></div>
                 <div><span>Регистрации</span><strong>{item.registeredCount}</strong></div>
@@ -29,7 +29,7 @@ export function AdminPromoCodes({ items }: AdminPromoCodesProps) {
                 <div><span>Лимит</span><strong>{item.code.discountRegistrationLimit ? `${item.registeredCount}/${item.code.discountRegistrationLimit}` : "—"}</strong></div>
                 <div><span>Оплаченные</span><strong>{item.paidCount}</strong></div>
                 <div><span>Конверсия</span><strong>{conversion}%</strong></div>
-              </header>
+              </summary>
               <div className="admin-referral-list">
                 {item.referrals.length === 0 ? <p>По этому коду пока никто не зарегистрировался.</p> : null}
                 {item.referrals.map((referral) => (
@@ -41,7 +41,7 @@ export function AdminPromoCodes({ items }: AdminPromoCodesProps) {
                   </div>
                 ))}
               </div>
-            </section>
+            </details>
           );
         })}
       </div>
