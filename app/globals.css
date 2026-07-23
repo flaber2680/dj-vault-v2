@@ -1048,7 +1048,7 @@ a.admin-table-row:focus-visible { background: rgba(255, 255, 255, .055); outline
 
 .admin-promo-workspace { border-top: 1px solid rgba(255, 255, 255, .28); }
 .admin-promo-item { border-bottom: 1px solid rgba(255, 255, 255, .18); }
-.admin-promo-item > header { min-height: 74px; display: grid; grid-template-columns: .7fr 1.4fr repeat(3, .45fr); gap: 18px; align-items: center; }
+.admin-promo-item > header { min-height: 74px; display: grid; grid-template-columns: minmax(110px, .8fr) minmax(170px, 1.7fr) repeat(5, minmax(76px, .55fr)); gap: 18px; align-items: center; }
 .admin-promo-item > header div { min-width: 0; display: grid; gap: 6px; }
 .admin-promo-item > header span { color: rgba(255, 255, 255, .36); font-size: 8px; text-transform: uppercase; }
 .admin-promo-item > header strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
