@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getCheckoutPackage } from "@/lib/payments/packages";
 import {
   createStoredPayment,
+  findPendingPromoDiscountPaymentForUser,
   isPaymentMethod,
   updateStoredPayment,
 } from "@/lib/payments/store";
@@ -43,6 +44,13 @@ export async function startCheckout(formData: FormData) {
 
   if (!isPaymentMethod(method)) {
     redirectWithCheckoutError(accessPackage.id, "invalid_method");
+  }
+
+  if (!accessPackage.isSmoke) {
+    const pendingDiscountPayment = await findPendingPromoDiscountPaymentForUser(user.id);
+    if (pendingDiscountPayment?.confirmationUrl) {
+      redirect(pendingDiscountPayment.confirmationUrl);
+    }
   }
 
   const storedPayment = await createStoredPayment({

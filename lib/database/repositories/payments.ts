@@ -262,6 +262,22 @@ export function findStoredPaymentRecordByProviderId(
   return row ? mapPayment(row) : null;
 }
 
+export function findPendingPromoDiscountPaymentForUserRecord(
+  userId: string,
+): StoredPaymentRecord | null {
+  const row = getRuntimeDatabase().prepare(`
+    SELECT p.*
+    FROM referrals r
+    JOIN activated_payments p ON p.id = r.discount_reserved_payment_id
+    WHERE r.referred_user_id = ?
+      AND r.discount_used_at IS NULL
+      AND p.status = 'pending'
+      AND p.confirmation_url IS NOT NULL
+    LIMIT 1
+  `).get(userId) as PaymentRow | undefined;
+  return row ? mapPayment(row) : null;
+}
+
 export function updateStoredPaymentRecord(id: string, patch: PaymentPatch): StoredPaymentRecord {
   const db = getRuntimeDatabase();
   const run = db.transaction(() => {

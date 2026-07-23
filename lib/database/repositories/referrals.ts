@@ -217,7 +217,6 @@ export function findPromoDiscountEligibilityRecord(userId: string): PromoDiscoun
     WHERE referred_user_id = ?
       AND discount_percent > 0
       AND discount_used_at IS NULL
-      AND discount_reserved_payment_id IS NULL
     LIMIT 1
   `).get(userId) as { referral_id: string; promo_code_id: string; code: string; discount_percent: number } | undefined;
   return row ? { referralId: row.referral_id, promoCodeId: row.promo_code_id, code: row.code, percent: row.discount_percent } : null;

@@ -6,6 +6,7 @@ import {
   failStoredPaymentActivation,
   findStoredPaymentRecordById,
   findStoredPaymentRecordByProviderId,
+  findPendingPromoDiscountPaymentForUserRecord,
   updateStoredPaymentRecord,
   type PaymentMethodRecord,
   type PaymentPatch,
@@ -45,6 +46,10 @@ export async function findStoredPaymentById(id: string) {
 
 export async function findStoredPaymentByProviderId(providerPaymentId: string) {
   return findStoredPaymentRecordByProviderId(providerPaymentId) as StoredPayment | null;
+}
+
+export async function findPendingPromoDiscountPaymentForUser(userId: string) {
+  return findPendingPromoDiscountPaymentForUserRecord(userId) as StoredPayment | null;
 }
 
 export async function updateStoredPayment(

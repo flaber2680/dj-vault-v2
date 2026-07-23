@@ -19,6 +19,7 @@ import {
 import * as authStore from "../lib/auth/store.ts";
 import {
   createStoredPayment,
+  findPendingPromoDiscountPaymentForUser,
   findStoredPaymentById,
   findStoredPaymentByProviderId,
   updateStoredPayment,
@@ -318,6 +319,33 @@ test("a canceled discounted payment releases the discount for the next payment",
   });
   assert.equal(retry.amount, 800);
   assert.equal(retry.discountPercent, 20);
+});
+
+test("a pending discounted payment remains resumable until it is paid or canceled", async (t) => {
+  await createRuntimeFixture(t);
+  await createOwnerWithPromo("RESUME");
+  const buyer = await registerEmailUserWithReferral({
+    email: "resume@example.com",
+    password: "resume-password",
+    promoCode: "RESUME",
+  });
+  const payment = await createStoredPayment({
+    userId: buyer.id,
+    packageId: "days-90",
+    durationDays: 90,
+    method: "sbp",
+    amount: 2700,
+  });
+  await updateStoredPayment(payment.id, {
+    confirmationUrl: "https://payments.example/resume",
+  });
+
+  const resumed = await findPendingPromoDiscountPaymentForUser(buyer.id);
+  assert.equal(resumed?.id, payment.id);
+  assert.equal(resumed?.amount, 2160);
+
+  await updateStoredPayment(payment.id, { status: "canceled" });
+  assert.equal(await findPendingPromoDiscountPaymentForUser(buyer.id), null);
 });
 
 test("a legacy succeeded payment never extends imported access a second time", async (t) => {
